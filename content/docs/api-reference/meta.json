@@ -1,0 +1,21 @@
+{
+	"pages": [
+		"index",
+		"---API Authentication---",
+		"...api-authentication",
+		"---API Keys---",
+		"...api-keys",
+		"---Merchant Shoppers---",
+		"...merchant-shoppers",
+		"---Payments---",
+		"...payments",
+		"---Subscriptions---",
+		"...subscriptions",
+		"---Quick Links---",
+		"...quick-links",
+		"---Safepay Shoppers---",
+		"...safepay-shoppers"
+	],
+	"title": "API Reference",
+	"root": true
+}

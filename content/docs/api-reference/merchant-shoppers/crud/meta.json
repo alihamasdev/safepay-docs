@@ -1,0 +1,10 @@
+{
+	"title": "CRUD",
+	"pages": [
+		"merchantShoppersCrudListCustomers",
+		"merchantShoppersCrudCreateCustomer",
+		"merchantShoppersCrudFindCustomer",
+		"merchantShoppersCrudDeleteCustomer",
+		"merchantShoppersCrudUpdateCustomer"
+	]
+}

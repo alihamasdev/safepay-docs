@@ -1,0 +1,4 @@
+{
+	"title": "Cancellations",
+	"pages": ["paymentsCancellationsReverse", "paymentsCancellationsRefund", "paymentsCancellationsVoid"]
+}

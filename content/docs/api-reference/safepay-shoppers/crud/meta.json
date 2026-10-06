@@ -1,0 +1,4 @@
+{
+	"title": "CRUD",
+	"pages": ["safepayShoppersCrudFindSafepayShopper", "safepayShoppersCrudCreateSafepayShopper", "safepayShoppersCrudSafepayShopperExists"]
+}

@@ -1,0 +1,4 @@
+{
+	"title": "Payments",
+	"pages": ["setup", "order", "configuration", "cancellations", "reporting", "meta", "webhooks"]
+}

@@ -1,0 +1,10 @@
+{
+	"title": "API Authentication",
+	"pages": [
+		"apiAuthenticationLoginCompany",
+		"apiAuthenticationCreateMerchantJwt",
+		"apiAuthenticationCreateShopperJwtUsingPassword",
+		"apiAuthenticationCreateGuestJwt",
+		"apiAuthenticationCreateApiKey"
+	]
+}

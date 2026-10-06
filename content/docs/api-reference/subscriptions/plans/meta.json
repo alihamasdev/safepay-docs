@@ -1,0 +1,10 @@
+{
+	"title": "Plans",
+	"pages": [
+		"subscriptionsPlansCreatePlan",
+		"subscriptionsPlansFindPlan",
+		"subscriptionsPlansArchivePlan",
+		"subscriptionsPlansUpdatePlan",
+		"subscriptionsPlansSearchPlans"
+	]
+}

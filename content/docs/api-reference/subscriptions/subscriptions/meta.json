@@ -1,0 +1,10 @@
+{
+	"title": "Subscriptions",
+	"pages": [
+		"subscriptionsFindSubscription",
+		"subscriptionsUpdateSubscription",
+		"subscriptionsSearchSubscriptions",
+		"subscriptionsResumeSubscription",
+		"subscriptionsCancelSubscription"
+	]
+}

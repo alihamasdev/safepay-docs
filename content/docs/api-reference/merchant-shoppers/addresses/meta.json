@@ -1,0 +1,4 @@
+{
+	"title": "Addresses",
+	"pages": ["merchantShoppersAddressesCreateAddress", "merchantShoppersAddressesFindAddress", "merchantShoppersAddressesUpdateAddress"]
+}

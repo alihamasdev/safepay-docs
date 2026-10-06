@@ -1,0 +1,8 @@
+{
+	"title": "Transactions",
+	"pages": [
+		"subscriptionsTransactionsSearchTransactions",
+		"subscriptionsTransactionsFindTransaction",
+		"subscriptionsTransactionsRefundTransaction"
+	]
+}

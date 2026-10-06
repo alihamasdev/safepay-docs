@@ -1,0 +1,4 @@
+{
+	"title": "Payment Methods",
+	"pages": ["safepayShoppersPaymentMethodsListPaymentMethods", "safepayShoppersPaymentMethodsDeletePaymentMethod"]
+}

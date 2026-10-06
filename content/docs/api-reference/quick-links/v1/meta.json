@@ -1,0 +1,10 @@
+{
+	"title": "V1",
+	"pages": [
+		"quickLinksSearchQuickLinks",
+		"quickLinksCreateQuickLink",
+		"quickLinksFindQuickLink",
+		"quickLinksDeleteQuickLink",
+		"quickLinksUpdateQuickLink"
+	]
+}

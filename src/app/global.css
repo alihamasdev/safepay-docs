@@ -2,6 +2,7 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/generated/spacious.css";
 @import "fumadocs-ui/css/preset.css";
+@import "fumadocs-openapi/css/preset.css";
 
 @theme inline {
 	--default-font-family: var(--font-sans);
