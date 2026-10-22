@@ -9,7 +9,7 @@
 	"semi": true,
 	"objectWrap": "preserve",
 	"experimentalTailwindcss": {
-		"stylesheet": "./src/app/globals.css",
+		"stylesheet": "./src/app/global.css",
 		"attributes": ["class", "className"],
 		"functions": ["cn", "cva", "useRender"],
 		"preserveDuplicates": false,

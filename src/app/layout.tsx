@@ -17,7 +17,7 @@ const mono = Geist_Mono({
 export default function Layout({ children }: LayoutProps<"/">) {
 	return (
 		<html lang="en" data-scroll-behavior="smooth" className={cn("scroll-smooth", geist.variable, mono.variable)} suppressHydrationWarning>
-			<body className="flex flex-col min-h-dvh">
+			<body className="flex min-h-dvh flex-col">
 				<RootProvider>{children}</RootProvider>
 			</body>
 		</html>
