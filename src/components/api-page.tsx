@@ -6,6 +6,8 @@ import { javascript } from "fumadocs-openapi/requests/generators/javascript";
 import { python } from "fumadocs-openapi/requests/generators/python";
 import { createOpenAPIPage } from "fumadocs-openapi/ui";
 
+import { getPaymentAction } from "@/lib/payments-data";
+
 import type { CodeUsageGenerator } from "fumadocs-openapi/requests/generators";
 
 const phpGenerator: CodeUsageGenerator = {
@@ -84,6 +86,42 @@ codeUsages.add("curl", {
 	lang: "bash",
 });
 
-export const OpenAPIPage = createOpenAPIPage({
+const BaseOpenAPIPage = createOpenAPIPage({
 	codeUsages,
 });
+
+export function OpenAPIPage({ action, ...props }: any) {
+	if (action && props.preloaded?.docs?.[props.document]) {
+		const doc = props.preloaded.docs[props.document];
+		const actionConfig = getPaymentAction(action);
+		if (actionConfig && props.operations?.[0]) {
+			const targetPath = props.operations[0].path;
+			const targetMethod = props.operations[0].method;
+			const clonedDoc = {
+				...doc,
+				paths: {
+					...doc.paths,
+					[targetPath]: {
+						...doc.paths[targetPath],
+						[targetMethod]: {
+							...doc.paths[targetPath]?.[targetMethod],
+							...actionConfig,
+						},
+					},
+				},
+			};
+			const newProps = {
+				...props,
+				preloaded: {
+					...props.preloaded,
+					docs: {
+						...props.preloaded.docs,
+						[props.document]: clonedDoc,
+					},
+				},
+			};
+			return <BaseOpenAPIPage {...newProps} />;
+		}
+	}
+	return <BaseOpenAPIPage {...props} />;
+}

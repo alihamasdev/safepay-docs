@@ -1,4 +1,14 @@
 {
 	"title": "Order",
-	"pages": ["paymentsOrderGenerateCaptureContext"]
+	"pages": [
+		"generate-capture-context",
+		"process-transient-token",
+		"payer-authentication-setup",
+		"enrollment",
+		"authorization",
+		"capture",
+		"reversal",
+		"google-pay",
+		"raast"
+	]
 }

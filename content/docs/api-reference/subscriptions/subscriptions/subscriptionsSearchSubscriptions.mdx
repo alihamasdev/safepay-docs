@@ -5,7 +5,7 @@ description: Search for subscriptions that have been created across all your
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: GET
   webhook: false
   toc: []
@@ -23,10 +23,7 @@ export default function Layout(props) {
 	return (
 		<>
 			{props.children}
-			<OpenAPIPage
-				document="./content/docs/api-reference/openapi.json"
-				operations={[{ path: "/client/subscriptions/v1/search", method: "get" }]}
-			/>
+			<OpenAPIPage document="./public/openapi.json" operations={[{ path: "/client/subscriptions/v1/search", method: "get" }]} />
 		</>
 	);
 }

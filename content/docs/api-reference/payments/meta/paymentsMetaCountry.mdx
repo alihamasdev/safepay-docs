@@ -4,7 +4,7 @@ description: Country operation.
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: GET
   webhook: false
   toc: []
@@ -21,7 +21,7 @@ export default function Layout(props) {
 	return (
 		<>
 			{props.children}
-			<OpenAPIPage document="./content/docs/api-reference/openapi.json" operations={[{ path: "/user/meta/v2/country", method: "get" }]} />
+			<OpenAPIPage document="./public/openapi.json" operations={[{ path: "/user/meta/v2/country", method: "get" }]} />
 		</>
 	);
 }

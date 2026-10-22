@@ -4,7 +4,7 @@ description: Retrieves the subscription with the given ID
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: GET
   webhook: false
   toc: []
@@ -21,10 +21,7 @@ export default function Layout(props) {
 	return (
 		<>
 			{props.children}
-			<OpenAPIPage
-				document="./content/docs/api-reference/openapi.json"
-				operations={[{ path: "/client/subscriptions/v1/{subscriptionId}", method: "get" }]}
-			/>
+			<OpenAPIPage document="./public/openapi.json" operations={[{ path: "/client/subscriptions/v1/{subscriptionId}", method: "get" }]} />
 		</>
 	);
 }

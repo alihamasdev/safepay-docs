@@ -1,4 +1,4 @@
 {
 	"title": "Setup",
-	"pages": ["paymentsSetupPayment"]
+	"pages": ["payment", "subscription", "instrument", "unscheduled-cof", "google-pay", "raast"]
 }

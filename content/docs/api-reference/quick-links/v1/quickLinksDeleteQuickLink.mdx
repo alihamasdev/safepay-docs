@@ -5,7 +5,7 @@ description: Delete a Quick Link corresponding to the ID passed in the URL. This
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: DELETE
   webhook: false
   toc: []
@@ -23,10 +23,7 @@ export default function Layout(props) {
 	return (
 		<>
 			{props.children}
-			<OpenAPIPage
-				document="./content/docs/api-reference/openapi.json"
-				operations={[{ path: "/invoice/quick-links/v1/{linkId}", method: "delete" }]}
-			/>
+			<OpenAPIPage document="./public/openapi.json" operations={[{ path: "/invoice/quick-links/v1/{linkId}", method: "delete" }]} />
 		</>
 	);
 }

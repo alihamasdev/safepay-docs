@@ -6,7 +6,7 @@ description: Mark the payment method as deleted. The response returns the
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: DELETE
   webhook: false
   toc: []
@@ -26,7 +26,7 @@ export default function Layout(props) {
 		<>
 			{props.children}
 			<OpenAPIPage
-				document="./content/docs/api-reference/openapi.json"
+				document="./public/openapi.json"
 				operations={[{ path: "/user/customers/v1/{customerId}/wallet/{paymentMethodId}", method: "delete" }]}
 			/>
 		</>

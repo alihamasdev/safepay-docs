@@ -9,7 +9,7 @@ description: >-
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: POST
   webhook: false
   toc: []
@@ -31,10 +31,7 @@ export default function Layout(props) {
 	return (
 		<>
 			{props.children}
-			<OpenAPIPage
-				document="./content/docs/api-reference/openapi.json"
-				operations={[{ path: "/order/payments/v3/{tracker}/refund", method: "post" }]}
-			/>
+			<OpenAPIPage document="./public/openapi.json" operations={[{ path: "/order/payments/v3/{tracker}/refund", method: "post" }]} />
 		</>
 	);
 }

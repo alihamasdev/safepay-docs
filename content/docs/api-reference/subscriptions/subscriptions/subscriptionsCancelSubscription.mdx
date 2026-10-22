@@ -4,7 +4,7 @@ description: Cancels a customer's subscription immediately
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: POST
   webhook: false
   toc: []
@@ -22,7 +22,7 @@ export default function Layout(props) {
 		<>
 			{props.children}
 			<OpenAPIPage
-				document="./content/docs/api-reference/openapi.json"
+				document="./public/openapi.json"
 				operations={[{ path: "/client/subscriptions/v1/{subscriptionId}/cancel", method: "post" }]}
 			/>
 		</>

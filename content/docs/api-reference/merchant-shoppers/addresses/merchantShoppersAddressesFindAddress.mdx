@@ -4,7 +4,7 @@ description: Find an address using its `token`. You must authenticate using your
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: GET
   webhook: false
   toc: []
@@ -22,10 +22,7 @@ export default function Layout(props) {
 	return (
 		<>
 			{props.children}
-			<OpenAPIPage
-				document="./content/docs/api-reference/openapi.json"
-				operations={[{ path: "/user/address/v2/{addressId}", method: "get" }]}
-			/>
+			<OpenAPIPage document="./public/openapi.json" operations={[{ path: "/user/address/v2/{addressId}", method: "get" }]} />
 		</>
 	);
 }

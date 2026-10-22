@@ -6,7 +6,7 @@ description: The update endpoint generates a new API Key. If you run this
 full: true
 _openapi:
   preload:
-    - ./content/docs/api-reference/openapi.json
+    - ./public/openapi.json
   method: PUT
   webhook: false
   toc: []
@@ -25,7 +25,7 @@ export default function Layout(props) {
 	return (
 		<>
 			{props.children}
-			<OpenAPIPage document="./content/docs/api-reference/openapi.json" operations={[{ path: "/client/api-settings/v1", method: "put" }]} />
+			<OpenAPIPage document="./public/openapi.json" operations={[{ path: "/client/api-settings/v1", method: "put" }]} />
 		</>
 	);
 }
