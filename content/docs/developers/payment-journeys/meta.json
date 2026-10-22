@@ -1,0 +1,4 @@
+{
+	"title": "Payment journeys",
+	"pages": ["customer", "guest", "user", "raast"]
+}

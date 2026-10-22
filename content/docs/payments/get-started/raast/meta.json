@@ -1,0 +1,4 @@
+{
+	"title": "Raast payments",
+	"pages": ["overview", "dynamic-qr", "request-to-pay"]
+}

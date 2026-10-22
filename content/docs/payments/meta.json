@@ -1,0 +1,13 @@
+{
+	"title": "Payments",
+	"root": true,
+	"pages": [
+		"overview",
+		"---Get started---",
+		"...get-started",
+		"---Modify payments---",
+		"...modify-payments",
+		"---Core concepts---",
+		"...concepts"
+	]
+}

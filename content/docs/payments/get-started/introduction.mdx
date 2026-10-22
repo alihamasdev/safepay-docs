@@ -1,0 +1,45 @@
+---
+title: "Introduction"
+description: "Start building your server-side integration"
+---
+
+You can integrate Safepay's client-side libraries with different server-side flows. Express Checkout is the default integration that we recommend and that meets the requirements for most online payments integrations.
+
+## Choose your server-side implementation
+
+Before you integrate with a client-side library, choose the server-side flow depending on the technical details and depending on the use cases that you want your integration to support.
+
+### Express checkout
+
+This flow supports faster checkouts through tokenization based on [shoppers](/docs/payments/concepts/shoppers) that have a Safepay account. Your server makes two API requests to our server after which you generate a Checkout URL. Once generated, redirect your customer to this URL to complete the payment. After your shopper completes their payment, Safepay will redirect them back to your website.
+
+### Advanced checkout
+
+This flow supports creating and using your own customers - [shoppers](/docs/payments/concepts/shoppers) that don't have a Safepay account. While this flow also supports tokenization, there are, in total, potentially 5 API calls your server has to make.
+
+### Raast payments
+
+Use the Raast flow to accept PKR payments through a Dynamic QR code or a Request to Pay sent to the payer's IBAN or Raast ID. Raast is available as the `RAAST` [payment intent](/docs/payments/concepts/payment-intents) and can be added to an embedded checkout alongside card payments.
+
+Start with the [Raast integration overview](/docs/payments/get-started/raast/overview). We recommend presenting Dynamic QR first and offering Request to Pay as an alternative.
+
+### Supported use cases
+
+| Description                                      | Express Checkout | Safepay Atoms | Safepay React Native | Cardinal |
+| ------------------------------------------------ | ---------------- | ------------- | -------------------- | -------- |
+| Make a payment with any available payment method | Yes              | Yes           | Yes                  | Yes      |
+| Tokenization                                     | Yes              | Yes           | Yes                  | Yes      |
+| Zero amount verification                         | Yes              | Yes           | Yes                  | Yes      |
+| Separate Capture                                 | No               | Yes           | Yes                  | Yes      |
+
+### Integration comparison
+
+| Integration features                         | Express Checkout   | Safepay Atoms | Safepay React Native | Cardinal            |
+| -------------------------------------------- | ------------------ | ------------- | -------------------- | ------------------- |
+| Integration effort                           | Low                | Medium        | Medium               | High                |
+| Number of endpoint requests from your server | 2                  | 3-4           | 3-4                  | 7-8                 |
+| Handling additional actions like 3DS         | Managed by Safepay | Self Managed  | Self Managed         | Managed by Merchant |
+
+## Get started
+
+Choose the server-side implementation that meets your needs to learn how to integrate with Safepay. We offer solutions for web and mobile devices.

@@ -1,0 +1,28 @@
+---
+title: "Payment actions"
+description: ""
+---
+
+Given a particular configuration the `next_actions` object is set on the `tracker`. This specifies the next action that must be executed to progress the state. For example:
+
+```json title="The tracker object"
+{
+	"intent": "CYBERSOURCE",
+	"mode": "payment",
+	"next_actions": {
+		"CYBERSOURCE": {
+			"kind": "GENERATE_CAPTURE_CONTEXT"
+		}
+	}
+}
+```
+
+This means that to progress the `tracker` for a card payment (via Cybersource), the next action to be executed is `GENERATE_CAPTURE_CONTEXT`.
+
+Executing actions requires running the [Order](https://apidocs.getsafepay.com/#250ed8ec-7f84-4dcf-843b-f169ad7f4538) endpoint with appropriate payloads. The client may run this endpoint repeatedly until no more actions remain. This is signified by the `NO_OP` action at which point the payment journey would be complete.
+
+The response returns the updated `tracker` and the result of the action inside the `action` object. This is often necessary for preparing the payload for the subsequent action.
+
+## Reference
+
+All payment actions are documented with examples under the [Order](https://apidocs.getsafepay.com/#250ed8ec-7f84-4dcf-843b-f169ad7f4538) API and [Cancellation](https://apidocs.getsafepay.com/#170e6887-a78e-492f-beea-0c5479129e85) API reference.

@@ -1,0 +1,4 @@
+{
+	"title": "Advanced checkout",
+	"pages": ["introduction", "safepay-atoms", "safepay-react", "cardinal"]
+}

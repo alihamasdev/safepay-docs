@@ -1,0 +1,17 @@
+---
+title: "Payment entry modes"
+description: ""
+---
+
+An `entry_mode` describes the way in which the customer's payment method details are collected. The options are as follows:
+
+- `flex` for paying via [Cybersource Flex Microform](https://developer.cybersource.com/docs/cybs/en-us/digital-accept-flex/developer/all/rest/digital-accept-flex/microform-integ-v2.html) transient tokens.
+- `raw` for paying via payment method details in plaintext.
+- `tms` for paying via [Cybersource Token Management Service](https://developer.cybersource.com/docs/cybs/en-us/tms/developer/ctv/rest/tms/tms-overview.html).
+
+<Callout type="warn">
+For cards you must be PCI compliant to be able to make use of the `raw` entry mode. Safepay will require your PCI certificate before we can enable payments for this entry mode.
+
+</Callout>
+
+Support for other entry modes will be available in the future.

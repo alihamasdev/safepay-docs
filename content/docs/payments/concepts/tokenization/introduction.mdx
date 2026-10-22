@@ -1,0 +1,40 @@
+---
+title: "Tokenization"
+description: "Implement card-on-file payments with Safepay."
+---
+
+With Safepay, you can securely store one or more payment details per shopper. This allows you to offer subscription payments, automatic top-ups to shopper accounts, and give your shoppers a faster checkout experience by using their stored card.
+
+We refer to these saved payment details as tokens and storing a shopper's payment details as tokenization.
+
+We support all major card brands, bank accounts, and Raast. See [Payments](/docs/payments/overview) for more information.
+
+#### Benefits of tokenization
+
+- Let shoppers store their payment details for a faster checkout experience later.
+- Offer shoppers their stored payment details for later payments.
+- Save payment details for a subscription or a non-fixed schedule contract.
+- Submit later payments for subscriptions or for automatic top-ups to shopper accounts.
+
+Tokenization for [Safepay shoppers](/docs/payments/concepts/shoppers) is available out-of-the-box. These tokens are managed by Safepay and allow shoppers to checkout much faster using their stored payment credentials or enter into recurring payment contracts with merchants. For [Merchant shoppers](/docs/payments/concepts/shoppers), you only need to pass some additional parameters when making a payment. In the first payment, we collect the payment information from the shopper and generate a token for it. The token is then sent to your server for future use. For later payments, you need to make a request with the shopper reference and the token.
+
+### Recurring payment types
+
+You can create and make payments with tokens for the following recurring payment types:
+
+- **One-off payments**: one-off transactions where a shopper can either store their payment details or pay in your website or app at a later time using their saved details.
+- **Subscriptions**: a recurring transaction made at regular intervals for a product or a service.
+- **Automatic top-ups and other non-fixed schedule contracts**: contracts that occur on a non-fixed schedule using stored card details. This includes automatic top-ups when the cardholder's balance drops below a certain amount.
+
+### PCI compliance
+
+If you're not fully PCI DSS compliant, we recommend that you use Safepay tokens to make payments. With tokens, you can offer an improved checkout experience to your shoppers.
+
+<Callout type="warn">
+To collect raw card data, you need to be fully PCI DSS compliant. If you are fully PCI DSS compliant, you can either create your own token vault or store raw card data to offer faster checkout options.
+
+</Callout>
+
+### Set up tokenization
+
+If your integration involves managing your own customers, you may want to take advantage of tokenization to speed up the checkout process, offer recurring payments and automatically top-up your customer accounts. Depending on your use case, there are different APIs that you must integrate to support tokenization for your customers.

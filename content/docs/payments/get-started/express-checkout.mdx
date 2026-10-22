@@ -1,0 +1,433 @@
+---
+title: "Express Checkout integration guide"
+description: "Start accepting payments on your website or app."
+---
+
+## How it works
+
+When the shopper goes to checkout on your website, you redirect them to a Hosted Checkout page. After they make the payment, the shopper gets redirected to your page, and you show the shopper the outcome of the payment session.
+
+1.  When the shopper goes to your checkout and clicks on the "Payment" button, make a request to create a [payment tracker](/docs/payments/concepts/tracker).
+2.  After you have created the tracker, make a request to create an authentication token.
+3.  Use one of our SDKs to create the Checkout URL or follow the steps below to create the URL manually.
+4.  Return the URL to your client website or redirect the shopper to it.
+5.  After the shopper pays and are redirected back to your store, poll an endpoint on your server until you receive confirmation from Safepay through a webhook that the payment has been completed.
+
+## Before you begin
+
+Before you begin to integrate, make sure you have followed the [Get started with Safepay](/docs/get-started/overview) guide to:
+
+- Get an overview of the steps needed to accept live payments.
+- [Create](/docs/setup-safepay/create-account/overview) your test account.
+
+After you have created your test account:
+
+- [Get your API keys](/docs/developers/safepay/api-keys).
+- [Set up webhooks to know the payment outcome](/docs/developers/webhooks/overview).
+
+<Callout type="info">
+**Authorization:** Authenticate server-side requests with an API Key header.
+
+- **Key:** `X-SFPY-MERCHANT-SECRET`
+- **Value:** `<Your secret key>`
+
+</Callout>
+
+## Integration steps
+
+1.  Install an API library on your server
+2.  Create a payment tracker and authentication token from your server.
+3.  Generate the Checkout URL
+4.  Redirect the shopper to the Checkout URL.
+5.  Handle redirects
+6.  Show the payment status to your shopper
+7.  Handle webhooks
+8.  Update your order management system
+9.  Test your integration and go live.
+
+1
+
+## Install an API library
+
+We provide two official server-side API libraries for Node and PHP that allow you to interact with the Safepay API easily. Our API libraries will save you time, because they:
+
+- Use an API version that is up to date.
+- Provide a simple interface to interact with the Safepay API.
+- Handle common errors and exceptions.
+- Send the request to Safepay using their built-in HTTP client, so you do not have to create your own.
+
+#### Requirements
+
+- Node.js version 18 or later.
+
+#### Installation
+
+```text
+# Install the API library
+npm install --save @sfpy/node-core
+# Update the API library
+npm update @sfpy/node-core
+```
+
+1a
+
+## Optional - Prefill customer details
+
+If you want the shopper to fill their own information, you can skip this step and proceed to [Create a Payment Session](/docs/payments/get-started/express-checkout#create-a-payment-session).
+
+Instead, if you are capturing the customer information on your own form already prior to checkout, you can pass the information to pre-fill on the checkout page.
+
+First, create a customer using the information you have captured:
+
+```javascript title="Create a Customer in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com",
+});
+
+(async () => {
+	try {
+		const response = await safepay.user.customers.create({
+			payload: {
+				first_name: "Hassan",
+				last_name: "Zaidi",
+				email: "hzaidi@getsafepay.com",
+				phone_number: "+923331234567",
+				country: "PK",
+				is_guest: true,
+			},
+		});
+		console.log(response);
+	} catch (error) {
+		console.error(error);
+	}
+})();
+```
+
+```json title="Sample Response"
+{
+	"data": {
+		"token": "cus_e927d58d-3796-4f36-a209-384906d712ea",
+		"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+		"email": "hzaidi@getsafepay.com",
+		"first_name": "Hassan",
+		"last_name": "Zaidi",
+		"phone_number": "+923331234567",
+		"country": "PK",
+		"is_guest": true,
+		"is_deleted": false,
+		"created_at": {
+			"seconds": 1697986036,
+			"nanos": 25310172
+		},
+		"updated_at": {
+			"seconds": 1697986036,
+			"nanos": 25310589
+		}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```
+
+<Callout type="info">
+Note down the `"token": "cus_e927d58d-3796-4f36-a209-384906d712ea"`. This will be passed in **Step 4**.
+
+</Callout>
+
+2
+
+## Create a payment session
+
+When the shopper goes to checkout, for example by selecting a Checkout button, make a POST [`/order/payments/v3/`](https://apidocs.getsafepay.com/#647f1146-d656-4868-a695-34ad8fcabeb2) request from your server, including:
+
+| Parameter          | Required | Description                                                                                                                                                                                           |
+| ------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `merchant_api_key` | Yes      | The public API key for your account. Your test and live accounts will have different API Keys.                                                                                                        |
+| `user`             | No       | The customer token. Add this to attach the customer to this tracker and prefill the information on the Checkout page                                                                                  |
+| `intent`           | Yes      | The payment channel you wish your shopper to make the payment through. Acceptable values are `CYBERSOURCE` and `MPGS`.                                                                                |
+| `mode`             | Yes      | This defines the payment flow you want your customer to go through. Refer to the section on [modes](/docs/payments/concepts/payment-modes) for more details on what each mode can do.                 |
+| `entry_mode`       | No       | This defines the entry mode you want your customer to go through. Refer to the section on [entry modes](/docs/payments/concepts/payment-entry-modes) for more details on what each entry mode can do. |
+| `currency`         | Yes      | This is the currency to charge your customer in. Refer to the section on [supported currencies](/docs/payments/concepts/currencies) to understand what currencies Safepay currently supports.         |
+| `amount`           | Yes      | This is the amount, in lowest denomination, to charge your customer. For instance, if you wish to charge $100, the `currency` will be `USD` and the `amount` will be `10000`.                         |
+| `metadata`         | No       | This is a JSON object that you can use to store additional information about the payment.                                                                                                             |
+| `include_fees`     | No       | Set this to true to pass on the MDR the fees to your customer in the order total.                                                                                                                     |
+
+For example:
+
+```javascript title="Create a payment session in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+(async () => {
+	try {
+		const response = await safepay.payments.session.setup({
+			merchant_api_key: "SAFEPAY_API_KEY",
+			intent: "CYBERSOURCE",
+			mode: "payment",
+			entry_mode: "raw",
+			currency: "USD",
+			amount: 10000,
+			metadata: {
+				order_id: "1234567890",
+			},
+			include_fees: false,
+		});
+	} catch (err) {
+		console.log(err);
+	}
+})();
+```
+
+The [`/order/payments/v3/`](https://apidocs.getsafepay.com/#647f1146-d656-4868-a695-34ad8fcabeb2) response will give you the payment session you have just created. The response will have the `token` for the `tracker` object which is the payment session. This will be required when generating the Checkout URL.
+
+For example:
+
+```json title="Payment session response"
+{
+	"data": {
+		"tracker": {
+			"token": "track_4f7d7e2d-ee05-44e3-81b7-6f6f2cca9727",
+			"client": "sec_a8e0a889-b987-4b7e-9757-a6bf28e4d4e2",
+			"environment": "sandbox",
+			"state": "TRACKER_STARTED",
+			"intent": "CYBERSOURCE",
+			"mode": "payment",
+			"entry_mode": "raw",
+			"next_actions": {
+				"CYBERSOURCE": {
+					"kind": "PAYER_AUTH_SETUP"
+				}
+			},
+			"purchase_totals": {
+				"quote_amount": {
+					"currency": "USD",
+					"amount": 10000
+				},
+				"base_amount": {
+					"currency": "PKR",
+					"amount": 27800
+				},
+				"conversion_rate": {
+					"base_currency": "PKR",
+					"quote_currency": "USD",
+					"rate": 278
+				}
+			}
+		},
+		"capabilities": {
+			"CYBERSOURCE": true
+		}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```
+
+3
+
+## Create an authentication token
+
+After creating the payment session, make a POST request to [`/client/passport/v1/token`](https://apidocs.getsafepay.com/#d5b420ca-32bf-437a-be9c-ca66ada21110) to generate a short lived authentication token.
+
+For example:
+
+```javascript title="Create an authentication token in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+(async () => {
+	try {
+		const response = await safepay.auth.passport.create();
+	} catch (err) {
+		console.log(err);
+	}
+})();
+```
+
+The [`/client/passport/v1/token`](https://apidocs.getsafepay.com/#d5b420ca-32bf-437a-be9c-ca66ada21110) response will give you the authentication token you will need to generate the Checkout URL.
+
+For example:
+
+```json title="Authentication token response"
+{
+	"data": "xnTyRgITVcHlyeKT2cf59_e836PouieQ6xPpuQiwFXD8M6HoJ283EP_zta2SKkm6B_IFNGEBmg=="
+}
+```
+
+4
+
+## Generate the Checkout URL
+
+Now that the payment session and authentication token have been generated, your server will have to generate the URL for the Checkout page in order for you to redirect your shopper to complete their payment.
+
+You can use our SDKs to generate the URL for you. For example:
+
+```javascript title="Generate a Safepay Checkout URL in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+try {
+	const checkoutURL = safepay.checkouts.payment.create({
+		// this the tracker.token from the payment session response
+		tracker: "[TRACKER_TOKEN]",
+		// the authentication token
+		tbt: "[AUTHENTICATION_TOKEN]",
+		// either production or sandbox
+		environment: "sandbox",
+		// attach a source, available options are: hosted, popup, mobile, woocommerce, and shopify
+		source: "hosted",
+		// OPTIONAL attach the customer.token from the create customer response to prefill the payment form
+		user_id: "[CUSTOMER_TOKEN]",
+		// the success URL to redirect your customer to after payment complete
+		redirect_url: "https://mywebsite.com/order/success",
+		// the cancel URL to redirect your customer to after the customer cancels the checkout session
+		cancel_url: "https://mywebsite.com/order/cancel",
+	});
+} catch (err) {
+	console.log(err);
+}
+```
+
+Redirect the shopper to the URL (url) generated above. The shopper pays on the Hosted Checkout page.
+
+5
+
+## Get the outcome
+
+### 1. Show the result of the payment session
+
+1.  After the shopper makes the payment, they are redirected back to your website.
+2.  Get the `tracker` that is appended to the return URL from the Hosted Checkout page. Use it to get the outcome of the payment session.
+
+    ```text title="Your redirect URL after a successful payment"
+    https://your-company.com/order/complete?tracker=track_4f7d7e2d-ee05-44e3-81b7-6f6f2cca9727
+    ```
+
+3.  Make a `GET` [`/reporter/api/v1/payments/{tracker}`](https://apidocs.getsafepay.com/#68957253-f58e-4165-adea-ecb0fc30b328) request including the tracker token. For example:
+
+```javascript title="Fetch a tracker to get the status in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+(async () => {
+	try {
+		const response = await safepay.reporter.payments.fetch(trackerToken);
+	} catch (err) {
+		console.log(err);
+	}
+})();
+```
+
+The response includes the current status of the payment. Search for the `tracker.state` property. If it shows `TRACKER_ENDED`, the payment has been successfully completed. For example:
+
+```json title="Fetch payment session response"
+{
+	"data": {
+		"tracker": {
+			"token": "track_1a46dc70-91f9-4892-8e25-0bb5205b69c7",
+			"client": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+			"environment": "sandbox",
+			"state": "TRACKER_ENDED",
+			"intent": "CYBERSOURCE",
+			"mode": "payment",
+			"next_actions": {
+				"CYBERSOURCE": {
+					"kind": "NOOP",
+					"request_id": "req_9ea53be5-828f-4730-b187-9d3d350ab72a"
+				}
+			},
+			"purchase_totals": {
+				"quote_amount": {
+					"currency": "PKR",
+					"amount": 600000
+				},
+				"base_amount": {
+					"currency": "PKR",
+					"amount": 600000
+				},
+				"conversion_rate": {
+					"base_currency": "PKR",
+					"quote_currency": "PKR",
+					"rate": 1
+				}
+			}
+		},
+		"action": {
+			"token": "req_9ea53be5-828f-4730-b187-9d3d350ab72a",
+			"payment_method": {
+				"token": "card_353d4bd9-1d72-4f4d-a358-b277833795a4",
+				"expiration_month": "12",
+				"expiration_year": "2023",
+				"card_type_code": "001",
+				"card_type": "Visa",
+				"bin_number": "445653",
+				"last_four": "1096"
+			}
+		}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```
+
+Inspect the `status` property on the `tracker` to ensure that it is currently set to `TRACKER_ENDED`. This state indicates that the payment has been successfully processed. You can refer to what different states the `tracker` can be in by visiting the [Tracker states](/docs/payments/concepts/tracker-states) guide.
+
+### 2. Update your order management system
+
+You get the outcome of each payment asynchronously, in a [`payment.succeeded`](/docs/developers/webhooks/webhook-types) webhook. Use the `tracker` from the webhook to match it to the `tracker` you generated in the payment session step. For a successful payment, the event contains `success: true`.
+
+Refer to [Webhooks](/docs/developers/webhooks/overview) for more information on how to get set up to receive events from Safepay.
+
+For reference on what the `payment.succeeded` event contains, see the [Webhook structure and types](/docs/developers/webhooks/webhook-types#payment-events) guide.
+
+## Mobile
+
+For mobile, you may render the checkout session in a WebView. Note that when generating the checkout URL using the backend SDKs, you will need to set the `source` as **mobile**.
+
+To mimic redirection, you can observe changes to the checkout URL and close the Webview on success or cancellation. The paths to observe are as follows:
+
+| Scenario     | URL path             | Example                                                                                                                                                                     |
+| ------------ | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Success      | `/external/complete` | [https://sandbox.api.getsafepay.com/embedded/external/complete?environment=sandbox&](https://sandbox.api.getsafepay.com/embedded/external/complete?environment=sandbox&)... |
+| Cancellation | `/external/error`    | [https://sandbox.api.getsafepay.com/embedded/external/error?environment=sandbox&](https://sandbox.api.getsafepay.com/embedded/external/error?environment=sandbox&)...       |
+
+## Payment errors and retries
+
+If the payment encounters an error, the shopper can retry the payment on the Hosted Checkout page. You receive a webhook for each payment attempt. So, you can receive more than one webhook with the same `tracker`.
+
+For reference on what the `payment.failed` event contains, see the [Webhook structure and types](/docs/developers/webhooks/webhook-types#payment-events) guide.
+
+## Expiration
+
+The Hosted Checkout page expires after the authentication token expires. A single authentication token lasts for 1 hour. In case the authentication token expires, we prompt the shopper to return back to your store and restart the checkout process.
+
+## Test and go live
+
+Before going live, use our list of [test cards](/docs/developers/safepay/test-cards) to test your integration. We recommend testing each payment method that you intend to offer to your shoppers. The test cards we have provided allow you test the following important scenarios:
+
+- Frictionless authentication (both successful and unsuccessful)
+- Step Up authentication (both successful and unsuccessful)
+- Time outs
+
+You can check the test payments in your Dashboard, under the **Payments** > **Payments 2.0** tab.
+
+When you are ready to go live, you need to:
+
+1.  [Apply for a live account](https://getsafepay.com/dashboard/signup).
+2.  Submit a request to add payment methods on your live account.
+3.  Switch from test to our live endpoints.

@@ -1,0 +1,91 @@
+---
+title: "Refund"
+description: "Refund a payment back to the shopper."
+---
+
+For payment methods that support refunds, you may use the [Refund API](https://apidocs.getsafepay.com/#1e7734ea-8478-42cf-9efa-94265e7777e0).
+
+Partial refunds are also supported and there is no limit to the number of partial refunds.
+
+You should perform refunds if over 24 hours have passed from the time of capture. If it is within 24 hours we suggest to use [Reversal](/docs/payments/modify-payments/reversal) instead.
+
+<Callout type="info">
+Note that card refunds are only applicable for up to 90 days after the transaction has completed.
+
+</Callout>
+
+```javascript title="Payment in NodeJS"
+const safepay = require("@sfpy/node-core")({
+	api_key: "YOUR_SERVER_API_KEY",
+	authType: "jwt",
+	host: "https://sandbox.api.getsafepay.com",
+});
+
+(async () => {
+	try {
+		const response = await safepay.order.payments.refund({
+			tracker: "track_1a46dc70-91f9-4892-8e25-0bb5205b69c7",
+			payload: {
+				currency: "PKR",
+				amount: 1000,
+			},
+		});
+		console.log(response);
+	} catch (err) {
+		console.error(err);
+	}
+})();
+```
+
+<Callout type="info">
+Note that when you perform a Full Refund, the response will have `"state": "TRACKER_REFUNDED"`
+
+When you perform a Partial Refund, the response will have `"state": "TRACKER_PARTIAL_REFUND"`
+
+</Callout>
+
+<Callout type="warn">
+Note that there is no limit to the number of Partial Refunds you can perform up till the whole amount is refunded.
+
+</Callout>
+
+```json title="Sample Response"
+{
+	"data": {
+		"tracker": {
+			"token": "track_1a46dc70-91f9-4892-8e25-0bb5205b69c7",
+			"client": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+			"environment": "sandbox",
+			"state": "TRACKER_PARTIAL_REFUND",
+			"intent": "CYBERSOURCE",
+			"mode": "payment",
+			"next_actions": {
+				"CYBERSOURCE": {
+					"kind": "NOOP",
+					"request_id": "req_9ea53be5-828f-4730-b187-9d3d350ab72a"
+				}
+			},
+			"purchase_totals": {
+				"quote_amount": {
+					"currency": "PKR",
+					"amount": 600000
+				},
+				"base_amount": {
+					"currency": "PKR",
+					"amount": 600000
+				},
+				"conversion_rate": {
+					"base_currency": "PKR",
+					"quote_currency": "PKR",
+					"rate": 1
+				}
+			}
+		},
+		"action": {}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```

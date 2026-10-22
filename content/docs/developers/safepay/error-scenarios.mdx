@@ -1,0 +1,19 @@
+---
+title: "Error Scenarios"
+description: "Use Error Scenarios to test payment failures."
+---
+
+| Test Cases                                     | Test Description                                                                                                        | Pre-requisites                                                                        |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Successful Required Authentication             | Submit an end to end 3DS request from the customer application to certify that the flow and configurations are correct. | Use a [test card](/docs/developers/safepay/test-cards)                                |
+| Successful Frictionless Authentication         | Submit an end to end 3DS request from the customer application to certify that the flow and configurations are correct. | Use a [test card](/docs/developers/safepay/test-cards)                                |
+| Unsuccessful Authentication                    | Submit an end to end 3DS request from the customer application to certify that the flow and configurations are correct. | Use a [test card](/docs/developers/safepay/test-cards)                                |
+| Card saved + Capture                           | Submit an end to end 3DS request from the customer application to certify that the flow and configurations are correct. | Safepay: Configurations are ready. <br />Merchant: end to end implementation is done. |
+| Reverse an authorization                       | Submit an end to end 3DS request from the customer application to certify that the flow and configurations are correct. | Please see [Reversal](/docs/payments/modify-payments/reversal)                        |
+| Void a capture                                 | Submit an end to end 3DS request from the customer application to certify that the flow and configurations are correct. | Please see [Void](/docs/payments/modify-payments/void)                                |
+| Payment full refund                            | Submit an authorization with the parameters mentioned in the pre-requiste                                               | Amount should match the original transaction amount                                   |
+| Payment partial refund                         | Submit an authorization with the parameters mentioned in the pre-requiste                                               | Amount should be lower than the original transaction amount                           |
+| Payment Failure - Insufficient Balance         | Submit an authorization with the parameters mentioned in the pre-requiste                                               | totalAmount=405100                                                                    |
+| Payment Failure - General Decline by Processor | Submit an authorization with the parameters mentioned in the pre-requiste                                               | totalAmount=400300                                                                    |
+| Payment Failure - Expired Credit Card          | Submit an authorization with the parameters mentioned in the pre-requiste                                               | totalAmount=405400                                                                    |
+| Payment Failure - Stolen Card                  | Submit an authorization with the parameters mentioned in the pre-requiste                                               | totalAmount=400400                                                                    |

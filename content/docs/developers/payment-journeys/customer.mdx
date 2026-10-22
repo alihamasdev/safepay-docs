@@ -1,0 +1,245 @@
+---
+title: "Merchant shoppers"
+description: "Learn how you can use the Safepay Order API to take your customer through the payment journey."
+---
+
+The payment journey for your customer involves a few key steps. This guide pertains to **Merchant shoppers** i.e. shoppers whose details and payment methods are managed by merchants using the [**Merchant Shoppers API**](https://apidocs.getsafepay.com/#67d144ef-fad9-43ea-8595-6f710f203305). Merchant shoppers also include guest shoppers which makes this the go-to flow for your payments integration.
+
+## Prerequisites
+
+To commence and successfully conclude the payment journey, you will require the following items.
+
+### Customer
+
+1
+
+You will need to create a new customer or use an existing one. Please refer to the [Merchant Shoppers API](https://apidocs.getsafepay.com/#67d144ef-fad9-43ea-8595-6f710f203305) for details on how to create customer objects or fetch existing ones.
+
+```bash title="Create a customer"
+curl --location 'https://sandbox.api.getsafepay.com/user/customers/v1/' \
+--data-raw '{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john-doe@gmail.com",
+  "phone_number": "+923331234567",
+  "country": "PK",
+  "is_guest": true
+}'
+```
+
+<Callout type="info">
+Note that there are no uniqueness constraints for emails when creating new customers. The customer `token` is the only unique identifier and we suggest persisting this in your system for future lookups.
+
+</Callout>
+
+### Tracker
+
+2
+
+Create a new [`tracker`](/docs/payments/concepts/tracker). Make a **POST** [`setupPayment`](https://apidocs.getsafepay.com/#7fcfa13f-bf41-4b86-80c6-5ca178d80baa) request to Safepay. This request is ideally made server-side and the tracker `token` may be passed to the client side where it may later be fetched using the [`fetchPayment`](/docs/payments/concepts/fetch-tracker) API.
+
+You must associate a customer to the tracker. The code samples below show how this can be achieved.
+
+```text title="Create a payment session"
+// For live payments use https://api.getsafepay.com
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/' \
+--data '{
+  "merchant_api_key": "sec_ed8fa26a-e36d-49d2-89bd-1c72c8b5c133",
+  "user" : "cus_e927d58d-3796-4f36-a209-384906d712ea",
+  "intent": "CYBERSOURCE",
+  "mode": "payment",
+  "currency": "PKR",
+  "amount": 100000
+}'
+```
+
+To accept card details in plaintext, you must also add `"entry_mode": "raw"` to the request.
+
+### Merchant authentication
+
+3
+
+Create a token for authenticating your server-side requests as a merchant. For security, we recommend creating a [time based token](https://apidocs.getsafepay.com/#d5b420ca-32bf-437a-be9c-ca66ada21110) server-side and then using that to authenticate when calling Safepay APIs from the frontend. For server-to-server requests, you may authenticate using your [secret key](https://apidocs.getsafepay.com/#eebdd3d9-f49a-4f34-97c9-0177f56a0758).
+
+## Payment journey
+
+### Payment method details
+
+1
+
+You must provide your customer's payment method details to perform a payment. There are several ways to collect this information from the customer.
+
+#### Cybersource Flex Microform
+
+The flex microform is a set of card fields hosted on Cybersource that are used to capture the customer's card details. You would embed the flex fields into your UI where the customer can enter their card information.
+
+To integrate the flex microform your tracker must have the `flex` [payment entry mode](/docs/payments/concepts/payment-entry-modes). Then you would make a **POST** [`generateCaptureContext`](https://apidocs.getsafepay.com/#95c3336f-131e-474d-8d24-2513eb0f52af) request to perform the `GENERATE_CAPTURE_CONTEXT` action. You must also specify your domain as the `origin` so that the micoroform may render properly.
+
+```bash title="Generate the capture context"
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/track_dccdef16-008e-4fae-81cc-1b7d81bf6c44' \
+--data '{
+  "payload": {
+    "origin": "https://api-example.com"
+  }
+}'
+```
+
+The capture context also specifies a target origin for which it is valid. By default, this is set to Safepay Checkout. However, this may be modified by passing the origin as shown above.
+
+For more details on how to generate the form, please refer to the [Microform](https://developer.cybersource.com/docs/cybs/en-us/digital-accept-flex/developer/all/rest/digital-accept-flex/microform-integ-v2.html) guide. Specifically, you should refer to the [client side documentation](https://developer.cybersource.com/docs/cybs/en-us/digital-accept-flex/developer/all/rest/digital-accept-flex/microform-integ-v2/microform-integ-getting-started-v2/setting-up-client-side-v2.html). This process should help you obtain the **transient token JWT** from the card fields which you will require for the next action. The transient token identifies the customer's card and may be used to complete the rest of the flow.
+
+Once the transient token JWT is received, you must make a **POST** [`processTransientToken`](https://apidocs.getsafepay.com/#d6437213-eb8b-4692-9490-53ce3e638811) request to perform the `PROCESS_TRANSIENT_TOKEN` and `PAYER_AUTHENTICATION_SETUP` actions. The response for this yields the card details along with the `payer_authentication_setup` object which carries the `access_token` and the `device_data_collection_url`. These are necessary for collecting the user's device data and passing the resulting fingerprint in the enrollment step.
+
+```bash title="Process the transient token and perform payer authentication setup"
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/track_dccdef16-008e-4fae-81cc-1b7d81bf6c44' \
+--data '{
+  "payload": {
+    "payment_method": {
+      "flex": {
+        "transient_token_jwt": "eyJraWQiOiIwOGlUMXJQYkFCMGliTXdBYzduMmVLd3lwZFVsWWszZiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjp7ImV4cGlyYXRpb25ZZWFyIjoiMjAyMyIsIm51bWJlciI6IjUyMDAwMFhYWFhYWDEwOTYiLCJleHBpcmF0aW9uTW9udGgiOiIxMiIsInR5cGUiOiIwMDIifSwiaXNzIjoiRmxleC8wOCIsImV4cCI6MTY5NjYxODI1MCwidHlwZSI6Im1mLTAuMTEuMCIsImlhdCI6MTY5NjYxNzM1MCwianRpIjoiMUU1NlhTNEY1S0VCUVE4TTZIOE0wTlc1SVI4QjdKS0VZTjdPVVU5NTc5TVIwVFk1U1FLRTY1MjA1NzBBQUIxMyIsImNvbnRlbnQiOnsicGF5bWVudEluZm9ybWF0aW9uIjp7ImNhcmQiOnsiZXhwaXJhdGlvblllYXIiOnsidmFsdWUiOiIyMDIzIn0sIm51bWJlciI6eyJtYXNrZWRWYWx1ZSI6IlhYWFhYWFhYWFhYWDEwOTYiLCJiaW4iOiI1MjAwMDAifSwic2VjdXJpdHlDb2RlIjp7fSwiZXhwaXJhdGlvbk1vbnRoIjp7InZhbHVlIjoiMTIifSwidHlwZSI6eyJ2YWx1ZSI6IjAwMiJ9fX19fQ.UXynZWMX-269Okkq6me3sCkqorfSJEA_U634-GaDRfZUhQCJ-c7RZIW6pzB-Du1v1-MaRwAN8K_HZnDrjnmwsUw3bQGpqCSYRnwPU9oNURkoWiTm5bZu1PtRuGgid3UvZ77C7fPV_8NHqxLv9WRx6W_QYYk0J9xKulql6PVFDS0Mmpew0tkQfKlGda8u995seV24OPJa7UOp0oWzaJYMmrEP9HoGwQJo2EKYpIko_9eqaKxFQDJ9VOG64IdfIR0NxpCiKGL9Yyf9V5RRZclM0BFu8CvFTmpGW4890haE0yINapgg7mfjUMDewk803zacnNuRLTueMvy2l4DE8NGxag"
+      }
+    }
+  }
+}'
+```
+
+#### Raw payment method information
+
+You may host input fields on your UI to capture the customer's payment method details.
+
+<Callout type="warn">
+For cards, you must be PCI compliant to be able to do this. Safepay will require your PCI certificate before we can enable payments for this entry mode.
+
+</Callout>
+
+To submit payment method details in plaintext, the tracker must have the `raw` [payment entry mode](/docs/payments/concepts/payment-entry-modes). For this flow, you may skip ahead to [Payer Authentication](/docs/developers/payment-journeys/customer#payer-authentication).
+
+### Payer authentication
+
+For security, the customer must authenticate themselves with the issuing bank via 3-D Secure. You may use Safepay APIs in conjunction with [Cybersource 3-D Secure](https://developer.cybersource.com/docs/cybs/en-us/payer-authentication/developer/all/so/payer-auth/pa-about-guide.html) to take your customer through the payer authentication process. For more information, you may refer to our [Payer Authentication guide](/docs/payments/concepts/three-d-secure).
+
+#### Setup
+
+2
+
+To begin payer authentication, make a **POST** [`payerAuthSetup`](https://apidocs.getsafepay.com/#43a20d43-75ea-4868-a912-dfd6c0a636dd) request to perform the `PAYER_AUTH_SETUP` action. If the tracker has the `raw` payment entry mode set, you must pass the payment method details in the request as documented in the API reference examples. Note that if you are following the **Flex Microform** flow then this would have already happened during the [`processTransientToken`](https://apidocs.getsafepay.com/#d6437213-eb8b-4692-9490-53ce3e638811) call and you may skip ahead to [Enrollment](/docs/developers/payment-journeys/customer#enrollment).
+
+```bash title="Perform payer authentication setup"
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/track_dccdef16-008e-4fae-81cc-1b7d81bf6c44' \
+--data '{
+  "payload": {
+    "payment_method": {
+      "card": {
+        "card_number": "5200000000001096",
+        "expiration_month": "12",
+        "expiration_year": "2028",
+        "cvv": "123"
+      }
+    }
+  }
+}'
+```
+
+The response for this action yields the card details along with the `payer_authentication_setup` object which carries the `access_token` and the `device_data_collection_url`. These are necessary for collecting the user's device data and passing the resulting fingerprint to the [Enrollment](/docs/developers/payment-journeys/customer#enrollment) request.
+
+#### Device data collection
+
+3
+
+Next you will need to collect your customer's device data. This process is documented [here](https://developer.cybersource.com/docs/cybs/en-us/payer-authentication/developer/all/so/payer-auth/pa2-ccdc-ddc-intro.html). You will need the `access_token` and `device_data_collection_url` from the previous step.
+
+#### Enrollment
+
+4
+
+Make a **POST** [`payerAuthEnrollment`](https://apidocs.getsafepay.com/#98dbaee4-2946-4621-ba8f-06f182e6cb85) request to perform the `PAYER_AUTH_ENROLLMENT` action. You must pass the `device_fingerprint_session_id` obtained after device data collection to ensure liability shift. The customer's billing details and authorization options are also configured in this request.
+
+You must also specify return URLs for success and failure scenarios in this request. These are URLs that the customer is redirected to after the step up process is complete.
+
+```bash title="Perform the enrollment check"
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/track_dccdef16-008e-4fae-81cc-1b7d81bf6c44' \
+--data '{
+  "payload": {
+    "billing": {
+      "street_1": "St 1",
+      "street_2": "",
+      "city": "Islamabad",
+      "state": "",
+      "postal_code": "44000",
+      "country": "PK"
+    },
+    "authorization": {
+      "do_capture": false
+    },
+    "authentication_setup": {
+      "success_url": "https://sandbox.api.getsafepay.com/checkout/success",
+      "failure_url": "https://sandbox.api.getsafepay.com/checkout/failure",
+      "device_fingerprint_session_id": "daf7d3a7-3a06-417b-af7b-c62d8d57493b"
+    }
+  }
+}'
+```
+
+If enrollment is successful, you should obtain the appropriate ECI values and the `access_token` in the `payer_authentication_enrollment` object. If the `step_up_url` is present, you should redirect the user and present the challenge screen from the issuer. Here is how to interpret the enrollment response:
+
+The response will also yield an authentication_status field that may take the following values. Here is how to interpret these:
+
+| `authentication_status` value | Recommended action                                                        |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `REQUIRED`                    | Proceed with the 3DS challenge using the access_token and the step_up_url |
+| `FRICTIONLESS`                | Skip step-up and proceed to authorization                                 |
+| `ATTEMPTED`                   | Skip step-up and proceed to authorization                                 |
+| `UNAVAILABLE`                 | Do not proceed                                                            |
+| `FAILED`                      | Do not proceed                                                            |
+| `REJECTED`                    | Do not proceed                                                            |
+| `NOT_ELIGIBLE`                | Do not proceed                                                            |
+
+The values for `eci` or `eci_raw` denote whether enrollment was successful:
+
+| `eci` value | Description                                                                        |
+| ----------- | ---------------------------------------------------------------------------------- |
+| `01`        | Authentication attempted (Mastercard)                                              |
+| `02`        | Successful authentication (Mastercard)                                             |
+| `05`        | Successful authentication (Visa, American Express, JCB, Diners Club, and Discover) |
+| `06`        | Authentication attempted (Visa, American Express, JCB, Diners Club, and Discover)  |
+| `07`        | The card cannot be enrolled. No liability shift.                                   |
+
+More details for 3DS payer authentication can be found [here](/docs/payments/concepts/three-d-secure).
+
+#### Step up and validation
+
+5
+
+Initiate step-up authentication on your front-end using the `access_token` and `step_up_url` obtained from the previous step. This is documented [here](https://developer.cybersource.com/docs/cybs/en-us/payer-authentication/developer/all/so/payer-auth/pa2-ccdc-stepup-frame-intro.html). The customer authenticates themselves with the issuing bank and then is redirected to the `success_url` or `failure_url` depending on the result.
+
+If payer authentication is successful, the `PAYER_AUTH_VALIDATION` action would already have been performed and the payment would be authorized. You may proceed to [Capture](/docs/developers/payment-journeys/customer#capture).
+
+### Authorization
+
+6
+
+Authorization must be requested for frictionless 3DS payments i.e. when no challenge is issued. It may also be requested to bypass payer authentication although this is not recommended and not possible across all card payment providers on Safepay.
+
+Make a **POST** [`authorize`](https://apidocs.getsafepay.com/#6145b078-c3e7-4621-88de-373187bf6147) request to perform the `AUTHORIZATION` action.
+
+```bash title="Perform authorization"
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/track_dccdef16-008e-4fae-81cc-1b7d81bf6c44' \
+--data '{
+  "payload": {
+    "authorization": {
+      "do_capture": false
+    }
+  }
+}'
+```
+
+### Capture
+
+7
+
+Make a **POST** [`capture`](https://apidocs.getsafepay.com/#ea313d8e-d0c2-41f3-9c57-aefa9a0563e9) request to perform the `CAPTURE` action. If successful, the payment will have been captured.
+
+```bash title="Perform the capture"
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/track_dccdef16-008e-4fae-81cc-1b7d81bf6c44' \
+--data '{}'
+```

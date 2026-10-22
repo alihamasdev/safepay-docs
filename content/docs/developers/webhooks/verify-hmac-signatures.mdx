@@ -1,0 +1,97 @@
+---
+title: "Verify HMAC signatures"
+description: "Verify the integrity of webhook events using HMAC signatures."
+---
+
+To protect your server from unauthorised webhook events, we strongly recommend that you use Hash-based message authentication code (HMAC) signatures for our webhooks. Each webhook event will include a signature calculated using a secret HMAC key and a payload from the webhook. By verifying this signature, you confirm that the webhook was sent by Safepay, and was not modified during transmission.
+
+To verify HMAC signatures, you can either:
+
+- Use one of our libraries.
+- Build your own custom solution.
+
+## View your shared secret
+
+Safepay signs the webhooks events it sends to your endpoints bny including a signature in the headers sent with each event. The header key is called `X-SFPY-SIGNATURE` and allows you to verify the integrity of the event. The first step is to locate your shared secret.
+
+- Navigate to your [Live Dashboard](https://getsafepay.com/dashboard/login) and then go to **Developers** > **Endpoints**.
+- Click on **View shared secret** and then click on the copy-to-clipboard icon.
+- Paste the secret key in your code base.
+
+<Callout type="warn">
+If you generate a new HMAC key, make sure that you can still accept webhooks signed with your previous HMAC key for some time, because:
+
+- It can take some time to propagate the new key in our infrastructure.
+- HMAC signatures are calculated when the webhook payload is generated, so any webhook events queued before you saved the new key are signed using your previous key.
+
+</Callout>
+
+## Verify using our libraries
+
+You can verify signatures using our:
+
+- [PHP library](https://github.com/getsafepay/sfpy-php)
+- [JavaScript library](https://github.com/getsafepay/node-core)
+
+```javascript title="Verify an HMAC signature in Node.js"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+// You can find your endpoint's secret in your
+// webhook settings in the Developer Dashboard
+const webhookSecret = "234hjkasd....";
+const payload = req.body.raw;
+const signature = req.headers["X-SFPY-SIGNATURE"];
+let event;
+try {
+	const event = safepay.webhooks.constructEvent(payload, signature, webhookSecret);
+} catch (err) {
+	// On error, log and return the error message
+	console.log(`❌ Error message: ${err.message}`);
+	res.status(400).send(`Webhook Error: ${err.message}`);
+	return;
+}
+
+switch (event.type) {
+	case "payment.succeeded":
+		const payment = event.data;
+	case "payment.failed":
+		const error = event.data;
+	default:
+		console.log("Received unknown event type " + event.type);
+}
+```
+
+## Verify using your own solution
+
+To build your own solution for verifying HMAC signatures, follow these steps:
+
+1
+
+### Construct the payload
+
+The first step will be to get access to the raw request data. Once you have that you should encode it into a `json` string.
+
+For example:
+
+```javascript title="Convert payload into a JSON Buffer in Javascript"
+const data = Buffer.from(JSON.stringify(payload));
+```
+
+2
+
+### Calculate the HMAC signature
+
+Once you have the payload converted, the next step is to compute the signature.
+
+```javascript title="Calculate the HMAC signature in Javascript"
+const hash = crypto.createHmac("sha512", secret).update(data).digest("hex");
+```
+
+3
+
+### Compare signatures
+
+If the signature that you calculated in Step 2 matches the signature that you received, you'll know that the webhook event was sent by Safepay and was not modified during transmission.

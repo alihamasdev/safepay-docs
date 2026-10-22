@@ -1,0 +1,115 @@
+---
+title: "Dynamic QR"
+description: "Generate and display a Raast Dynamic QR payment request."
+---
+
+Dynamic QR is the recommended default Raast experience. Safepay returns an EMVCo QR payload containing the payment details, and the customer scans it with a supported banking app.
+
+Before continuing, [create a Raast tracker](/docs/payments/get-started/raast/overview#create-a-raast-tracker) and confirm that `capabilities.RAAST` is `true`.
+
+1
+
+## Generate the QR
+
+Send `DYNAMIC_QR` in `payload.raast.kind`. Do not send a `payer` object for this flow.
+
+`expiry_in_minutes` is optional. It defaults to 15 minutes and accepts values from 1 to 180.
+
+```javascript title="Generate a Dynamic QR in NodeJS (axios)"
+const axios = require("axios");
+
+async function generateDynamicQr(trackerToken, checkoutToken) {
+	const response = await axios.post(
+		`https://sandbox.api.getsafepay.com/order/payments/v3/${trackerToken}`,
+		{
+			payload: {
+				raast: {
+					kind: "DYNAMIC_QR",
+					expiry_in_minutes: 15,
+				},
+			},
+		},
+		{
+			headers: {
+				Authorization: `Bearer ${checkoutToken}`, // YOUR_CHECKOUT_TOKEN
+				"Content-Type": "application/json",
+			},
+		},
+	);
+	return response.data;
+}
+
+// Example:
+// generateDynamicQr('track_550e8400-e29b-41d4-a716-446655440000', 'YOUR_CHECKOUT_TOKEN');
+```
+
+2
+
+## Handle the response
+
+The response includes `raast_payment.qr_code.code`, which is the EMVCo payload to render, and an expiry for the payment request.
+
+```json title="Dynamic QR response"
+{
+	"data": {
+		"tracker": {
+			"token": "track_550e8400-e29b-41d4-a716-446655440000",
+			"state": "TRACKER_STARTED",
+			"payment_method_kind": "wallet",
+			"intent": "RAAST",
+			"mode": "payment",
+			"entry_mode": "raw",
+			"next_actions": {
+				"RAAST": {
+					"kind": "NOOP",
+					"request_id": "req_642a5dd3-76cb-4784-b3a0-a0c82b0cc63d"
+				}
+			},
+			"raast_payment": {
+				"kind": "DYNAMIC_QR",
+				"request_id": "642a5dd3-76cb-4784-b3a0-a0c82b0cc63d",
+				"status": "INITIATED",
+				"expires_at": { "seconds": 1786094100 },
+				"qr_code": {
+					"token": "qr_19d1c3ac-07de-45d5-84f5-942e558af73e",
+					"code": "000201010212...6304A13A"
+				}
+			}
+		}
+	},
+	"status": { "errors": [], "message": "success" }
+}
+```
+
+The `payment_id` can be absent until the customer completes a Dynamic QR payment. Do not require it before rendering the QR.
+
+<Callout type="warn">
+Render `qr_code.code` exactly as returned. Do not parse, edit, or append values to the EMVCo payload.
+
+</Callout>
+
+3
+
+## Build the checkout state
+
+After generating the QR:
+
+1.  Render `qr_code.code` with a QR library that preserves the complete payload.
+2.  Save `raast_payment.expires_at` locally and display a countdown.
+3.  Start polling `GET /order/payments/v3/{tracker}/status`, which returns `raast_payment` alongside the tracker.
+4.  Show success only for `tracker.state == TRACKER_ENDED`.
+5.  Stop polling once captured or expired. A Dynamic QR does not fail or get cancelled on its own the way an RTP can — see [Raast payment statuses](/docs/payments/concepts/raast/payment-statuses) if you need the full picture of how the two fields relate.
+
+While the Dynamic QR is awaiting payment, the customer may choose RTP or another available payment intent. Switching to RTP does not change `intent`, `mode`, or `entry_mode` — send the same `POST /order/payments/v3/{tracker}` request with `payload.raast.kind: "RTP"` and the payer identifier. Include `"action": "CREATE_RAAST_PAYMENT"` at the request root: once the Dynamic QR exists, `next_actions.RAAST.kind` is `NOOP`, and the action override is required to initiate another Raast payment. See [Request to Pay](/docs/payments/get-started/raast/request-to-pay#switch-from-dynamic-qr) for a complete example. Once you submit an RTP request, remove the switching controls and continue polling that attempt — you'll only be able to switch back once it fails; see [switching back after a failed RTP](/docs/payments/get-started/raast/request-to-pay#switch-back-after-a-failed-rtp).
+
+<Callout type="warn">
+Switching away from a Dynamic QR does not cancel it. The QR remains scannable and payable until its own `expires_at`, even after the customer moves to RTP or another intent. Stop rendering and offering the QR in your UI as soon as the customer switches.
+
+</Callout>
+
+<Callout type="info">
+The sandbox response contains a mock QR payload for testing your API and UI integration. It cannot be paid by a banking app.
+
+</Callout>
+
+See [Raast payment statuses](/docs/payments/concepts/raast/payment-statuses) for polling guidance.

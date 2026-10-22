@@ -1,0 +1,42 @@
+---
+title: "Tracker states"
+description: ""
+---
+
+# Tracker state
+
+A tracker is essentially a state machine where a transition between states occurs when certain actions are executed e.g. when an a card authorization is made or a payment is refunded. The possible states for a tracker are documented below.
+
+## Tracker states
+
+| State                    | Description                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `TRACKER_STARTED`        | The tracker has been created or reset and payment actions may be performed.                       |
+| `TRACKER_AUTHORIZED`     | The latest attempt has created an authorization which may now be captured.                        |
+| `TRACKER_ENROLLED`       | The enrollment check has been performed. Relevant for 3DS payer authentication for card payments. |
+| `TRACKER_ENDED`          | The tracker has been paid.                                                                        |
+| `TRACKER_CANCELLED`      | The customer has cancelled the payment session.                                                   |
+| `TRACKER_EXPIRED`        | The tracker has been expired and may no longer be updated.                                        |
+| `TRACKER_REFUNDED`       | The payment has been fully refunded.                                                              |
+| `TRACKER_PARTIAL_REFUND` | The payment has been partially refunded.                                                          |
+| `TRACKER_DISPUTED`       | A dispute has been recorded against the payment.                                                  |
+| `TRACKER_REVERSED`       | The authorization under the latest attempt of the tracker has been reversed.                      |
+| `TRACKER_VOIDED`         | The payment has been voided.                                                                      |
+
+## How to interpret tracker states
+
+The following table shows what actions may be performed when the tracker is in a particular state.
+
+| State                    | Interpretation                                                                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `TRACKER_STARTED`        | Payment actions may be executed via the Safepay [Order API](https://apidocs.getsafepay.com/#250ed8ec-7f84-4dcf-843b-f169ad7f4538). |
+| `TRACKER_AUTHORIZED`     | The authorization may be captured. It may also be reversed if applicable.                                                          |
+| `TRACKER_ENROLLED`       | The client may proceed with authorization.                                                                                         |
+| `TRACKER_ENDED`          | No more payment actions are allowed. The tracker may be voided, refunded, or disputed.                                             |
+| `TRACKER_CANCELLED`      | No actions may be taken.                                                                                                           |
+| `TRACKER_EXPIRED`        | No actions may be taken.                                                                                                           |
+| `TRACKER_REFUNDED`       | The refund may be voided if applicable.                                                                                            |
+| `TRACKER_PARTIAL_REFUND` | Existing refunds may be voided if applicable. Additional refunds may also be requested.                                            |
+| `TRACKER_DISPUTED`       | No actions may be taken.                                                                                                           |
+| `TRACKER_REVERSED`       | No actions may be taken.                                                                                                           |
+| `TRACKER_VOIDED`         | No actions may be taken.                                                                                                           |

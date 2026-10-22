@@ -1,0 +1,83 @@
+---
+title: "Overview"
+description: "Receive important updates related to your account."
+---
+
+Webhooks are crucial for a successful integration with Safepay, and the only way you'll receive automatic updates about:
+
+Events that are not triggered by a request from your side, for example when a shopper completes a payment, or when a store admin refunds a payment.
+
+You can use webhooks to automate business processes, for example order management or downloading reports for accounting.
+
+To manage webhooks, you must have the following user role:
+
+- Developer
+
+To process webhooks, you need to:
+
+1.  Expose an endpoint on your server.
+2.  Set up webhooks in your Customer Area.
+3.  Accept webhook events.
+
+1
+
+### Expose an endpoint on your server
+
+Webhooks are HTTP callbacks sent to an endpoint on your server. Safepay requires you to use HTTPS endpoints with TLSv1.2 or TLSv1.3.
+
+To receive webhook events, you need a server that has the following:
+
+- An endpoint that can receive a JSON, or an HTTP POST.
+- For test environments: an open TCP port for HTTP traffic (must be 80, 8080, or 8888) or HTTPS traffic (must be 443, 8443, or 8843) with TLSv1.2 or TLSv1.3.
+- For live environments: an open TCP port for HTTPS traffic (must be 443, 8443, or 8843) with TLSv1.2 or TLSv1.3.
+
+2
+
+### Accept webhooks
+
+<Callout type="warn">
+We require you to acknowledge every webhook event with a successful HTTP response status code, for example **200**. If we don't receive this response within 10 seconds, for example because your server is down, all webhook events to your endpoint go to the retry queue.
+
+</Callout>
+
+When we deliver a webhook event to your server:
+
+1.  Verify the HMAC signature included in the webhook event payload. This is to confirm that the webhook event was sent by Safepay, and was not modified during transmission. For more information, refer to [Verify HMAC signatures](/docs/developers/webhooks/verify-hmac-signatures). If the HMAC signature is not valid, we do not recommend acknowledging the webhook event.
+2.  Store the webhook event in your database.
+3.  Acknowledge the webhook event with a successful HTTP response status code, for example **200**. If an error occurs, we recommend that your server response with an error HTTP response status code.
+4.  Apply your business logic. Make sure that you acknowledge the webhook event before you apply any business logic, because an error in your business logic can prevent webhooks with important updates from reaching your system.
+
+For information about the structure abnd content of webhooks, refer to [Webhook structure and types](/docs/developers/webhooks/webhook-types).
+
+3
+
+### Set up webhooks in your dashboard.
+
+In your [Live Dashboard](https://getsafepay.com/dashboard/login), enable and configure webhooks for your company account.
+
+1.  In your [Dashboard](https://getsafepay.com/dashboard/login), go to **Deverlopers** > **Endpoints**.
+2.  Select **+ Add an endpoint**
+3.  Enter your webhook server's URL. It must be a public URL and click **Create**.
+4.  After you see your newly created endpoint in the list, click on the action button (three dots) and select **Details** from the dropdown.
+5.  From the list of available events, select all the events that you are interested in. We recommend selecting the `2.0.0` events.
+
+<Callout type="info">
+Selecting multiple events means that data for each event will be sent to your endpoint. This means you must build in business logic on your side to handle all events that you select. If you are not willing to do that, you can subscribe to a single event per endpoint.
+
+</Callout>
+
+6.  After selecting events that you're interested in, scroll down and click on **Subscribe**
+
+4
+
+### Test and go live
+
+To test webhooks, we recommend replicating the same configurations you make on your [Live Dashboard](https://getsafepay.com/dashboard/login) to your [Sandbox Dashboard](https://sandbox.api.getsafepay.com/dashboard/login).
+
+Once done, create a test payment and test the webhooks associated with it. Match the test payment to a webhook with the `tracker.token` in the [payload of the webhook](/docs/developers/webhooks/webhook-types).
+
+#### Go live
+
+1.  Follow the instructions in [Step 3](/docs/developers/webhooks/overview#set-up-webhooks-in-your-dashboard)
+2.  Test webhooks in your [Sandbox Dashboard](https://sandbox.api.getsafepay.com/dashboard/login). You may also create test webhook notifications using the [Test Webhook API](https://apidocs.getsafepay.com/#4de812b1-60f2-45ab-aa4c-438a43df1456).
+3.  If you're verifying HMAC signatures, make sure that you use the HMAC key from your [Live Dashboard](https://getsafepay.com/dashboard/developers/endpoints), which is different from the HMAC key from your [Sandbox Dashboard](https://sandbox.api.getsafepay.com/dashboard/developers/endpoints).

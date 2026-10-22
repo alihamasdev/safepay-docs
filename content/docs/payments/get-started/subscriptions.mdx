@@ -1,0 +1,674 @@
+---
+title: "Subscriptions integration guide"
+description: "Accept recurring payments with Safepay Subscriptions using a hosted checkout flow."
+---
+
+Safepay Subscriptions enable recurring billing (daily, weekly, monthly, yearly). The customer must approve billing through Safepay Checkout — subscriptions cannot be created silently via API.
+
+<Callout type="info">
+Subscriptions are event-driven. Your system's source of truth must be webhook events — not redirect responses, not API polling.
+
+</Callout>
+
+## How it works
+
+When a customer chooses a subscription plan on your website, you redirect them to Safepay Checkout. After they authorize payment, Safepay sends webhooks to your server. You activate the subscription in your database only after a successful payment webhook.
+
+1.  Create a reusable subscription plan (Dashboard or API).
+2.  Generate a short-lived authentication token from your server.
+3.  Build the Checkout URL with your plan ID and auth token (and your internal reference where correlation is required), then redirect the customer.
+4.  The customer completes payment authorization on Safepay Checkout.
+5.  Safepay sends a `subscription.created` webhook to your endpoint.
+6.  Safepay sends a `subscription.payment.succeeded` webhook when the first charge succeeds.
+7.  Your webhook handler activates the subscription in your database and grants access.
+
+| Step | Action                                         | Who                    |
+| ---- | ---------------------------------------------- | ---------------------- |
+| 1    | Create a subscription plan                     | Your backend           |
+| 2    | Generate auth token                            | Your backend           |
+| 3    | Build checkout URL + redirect customer         | Your backend           |
+| 4    | Customer completes payment authorization       | Safepay Checkout       |
+| 5    | `subscription.created` webhook fires           | Safepay → Your webhook |
+| 6    | `subscription.payment.succeeded` webhook fires | Safepay → Your webhook |
+| 7    | Activate subscription in your DB               | Your webhook handler   |
+
+## Before you begin
+
+Before you begin to integrate, make sure you have:
+
+- A Safepay Merchant Account (Sandbox and Live)
+- Your Secret Key (Server Key)
+- Your Webhook Secret (HMAC key — separate per environment)
+- An HTTPS-enabled backend server (TLSv1.2 or TLSv1.3)
+- A publicly reachable webhook endpoint
+
+<Callout type="warn">
+**Warning:** Sandbox and Live have different Secret Keys and different HMAC keys. Never mix environments.
+
+</Callout>
+
+After you have created your test account:
+
+- Get your API keys from the Dashboard.
+- Set up webhooks to receive subscription events (see [Webhook configuration](/docs/payments/get-started/subscriptions#webhook-configuration-in-dashboard)).
+
+<Callout type="info">
+**Authorization:** Authenticate server-side requests with an API Key header.
+
+- **Key:** `X-SFPY-MERCHANT-SECRET`
+- **Value:** `<Your secret key>`
+
+</Callout>
+
+## Integration steps
+
+1.  Install an API library on your server (optional but recommended).
+2.  Create a subscription plan (Dashboard or API).
+3.  Generate an authentication token from your server.
+4.  Build the Checkout URL and redirect the customer.
+5.  Handle redirects for UI feedback only.
+6.  Implement webhook verification and processing.
+7.  Correlate events using your `reference` and Safepay `sub_id`.
+8.  Configure environment variables and dashboard endpoints.
+9.  Test your integration and go live.
+
+1
+
+## Install an API library
+
+We provide official server-side API libraries for Node.js and PHP that allow you to interact with the Safepay API easily.
+
+#### Requirements
+
+- Node.js version 18 or later.
+
+```text
+# Install the API library
+npm install --save @sfpy/node-core
+```
+
+2
+
+## Create a subscription plan
+
+Create a plan once via the Safepay Dashboard or API. Plans are reusable — you do not recreate a plan per customer. Save the returned `planId` (token) for all subsequent checkout generation.
+
+You can also create plans in the Merchant Dashboard under Subscriptions. Prefer the Dashboard or SDK for plan creation.
+
+```javascript title="Create a subscription plan in NodeJS"
+const Safepay = require("@sfpy/node-core");
+
+const safepay = new Safepay(process.env.SAFEPAY_SECRET_KEY, {
+	authType: "secret",
+	host: process.env.SAFEPAY_HOST, // Use env var — never hardcode
+});
+
+async function createPlan() {
+	try {
+		const response = await safepay.client.plans.create({
+			payload: {
+				amount: "5000", // In lowest currency unit (paisas for PKR)
+				currency: "PKR", // PKR | USD
+				interval: "MONTH", // DAY | WEEK | MONTH | YEAR
+				interval_count: 1, // Every 1 month
+				billing_cycles: 0, // 0 = indefinite; N = fixed cycles
+				type: "RECURRING",
+				product: "premium-plan", // Unique identifier for your product
+				active: true,
+			},
+		});
+		console.log("Plan created:", response.data.token); // Save this planId
+		return response.data.token;
+	} catch (err) {
+		console.error("Plan creation failed:", err.message);
+		throw err;
+	}
+}
+```
+
+Example response (sandbox placeholder):
+
+```json title="Plan creation response"
+{
+	"data": {
+		"token": "plan_33e626b3-d92e-40b3-a379-4f89d61f8c83",
+		"amount": "5000",
+		"currency": "PKR",
+		"interval": "MONTH",
+		"interval_count": 1,
+		"billing_cycles": 0,
+		"type": "RECURRING",
+		"product": "premium-plan",
+		"active": true
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```
+
+<Callout type="info">
+Note down the `"token": "plan_..."`. This is your `plan_id` for checkout URL generation. Plan creation is recommended via the **Merchant Dashboard** or the official SDK (`safepay.client.plans.create`). Prefer those over hand-rolled REST calls so you stay aligned with the client library.
+
+</Callout>
+
+If you create the plan in the Dashboard:
+
+1.  Open Sandbox or Live Dashboard → Subscriptions → Plans.
+2.  Create a plan with the fields below.
+3.  Copy the Plan ID (`plan_...`) into your environment or database.
+
+### Plan fields reference
+
+| Parameter        | Required | Description                                                 |
+| ---------------- | -------- | ----------------------------------------------------------- |
+| `amount`         | Yes      | Price in lowest currency unit (paisas for PKR), as a string |
+| `currency`       | Yes      | `PKR` or `USD`                                              |
+| `interval`       | Yes      | `DAY` \| `WEEK` \| `MONTH` \| `YEAR`                        |
+| `interval_count` | Yes      | Multiplier — e.g. `2` + `WEEK` = every 2 weeks              |
+| `billing_cycles` | Yes      | `0` = indefinite; `N` = stops after N charges               |
+| `type`           | Yes      | Always `RECURRING` for subscriptions                        |
+| `product`        | Yes      | Your unique product identifier                              |
+| `active`         | Yes      | Set `true` to make the plan available for checkout          |
+
+<Callout type="info">
+`billing_cycles: 0` means the subscription renews indefinitely until cancelled. Set a non-zero value for fixed-term plans (e.g. an annual plan with `12` billing cycles for monthly charges).
+
+</Callout>
+
+3
+
+## Create an authentication token
+
+After you have a plan, make a `POST` request to `/client/passport/v1/token` to generate a short-lived authentication token. Tokens expire in about 1 hour. Cache with a buffer to avoid unnecessary API calls at scale.
+
+```javascript title="Create an authentication token in NodeJS"
+const axios = require("axios");
+
+let tokenCache = { value: null, expiresAt: 0 };
+
+async function getAuthToken() {
+	const now = Date.now();
+
+	// Refresh if expired or within 5-minute buffer
+	if (tokenCache.value && now < tokenCache.expiresAt - 300000) {
+		return tokenCache.value;
+	}
+
+	const response = await axios.post(
+		`${process.env.SAFEPAY_HOST}/client/passport/v1/token`,
+		{},
+		{
+			headers: {
+				"X-SFPY-MERCHANT-SECRET": process.env.SAFEPAY_SECRET_KEY,
+			},
+		},
+	);
+
+	tokenCache = {
+		value: response.data.data,
+		expiresAt: now + 3600000, // 1 hour TTL
+	};
+
+	return tokenCache.value;
+}
+```
+
+Example response (sandbox placeholder):
+
+```json title="Authentication token response"
+{
+	"data": "xnTyRgITVcHlyeKT2cf59_e836PouieQ6xPpuQiwFXD8M6HoJ283EP_zta2SKkm6B_IFNGEBmg=="
+}
+```
+
+<Callout type="warn">
+**Warning:** For multi-instance deployments (multiple servers/pods), store the token cache in Redis rather than in-process memory to avoid redundant token generation.
+
+</Callout>
+
+4
+
+## Generate the Checkout URL and redirect
+
+Now that the plan and authentication token are available, your server must build the Checkout URL and redirect the customer so they can authorize the subscription.
+
+Build the URL on your server against `SAFEPAY_CHECKOUT_HOST` using the subscription checkout route `/checkout/auth/login`. The checkout URL uses `plan_id`, `auth_token`, `env`, `redirect_url`, and `cancel_url`. If your integration uses an internal `reference` for webhook correlation, preserve and persist that reference in your own database; do not assume a tracker is required for subscription checkout.
+
+```javascript title="Build the Checkout URL in NodeJS"
+function buildCheckoutUrl({ planId, reference, token, redirectUrl, cancelUrl }) {
+	const base = process.env.SAFEPAY_CHECKOUT_HOST;
+	const env = process.env.SAFEPAY_ENV || "sandbox";
+	const params = new URLSearchParams({
+		plan_id: planId,
+		auth_token: token,
+		env,
+		redirect_url: redirectUrl,
+		cancel_url: cancelUrl,
+	});
+	return `${base}/checkout/auth/login?${params.toString()}`;
+}
+```
+
+cURL is not used to open checkout in the browser. After you obtain an auth token, assemble the URL and redirect the shopper:
+
+```text title="Example Checkout URL (sandbox)"
+https://sandbox.api.getsafepay.com/checkout/auth/login?plan_id=plan_...&auth_token=...&env=sandbox&redirect_url=https%3A%2F%2Fmywebsite.com%2Fsubscribe%2Fsuccess&cancel_url=https%3A%2F%2Fmywebsite.com%2Fsubscribe%2Fcancel
+```
+
+Live checkout host: `https://getsafepay.com`.
+
+### Redirect handler
+
+Persist your `reference` **before** redirecting if you use a merchant-side correlation reference. The reference is your own identifier; do not use a payment tracker as the subscription correlation key. If a webhook arrives before your success page runs, the row must already exist.
+
+```javascript title="Redirect handler in NodeJS"
+app.get("/subscribe", async (req, res) => {
+	const { userId, planId } = req.query;
+
+	// Generate a stable, idempotent reference you can store and look up
+	const reference = `sub_${userId}_${Date.now()}`;
+
+	// Persist reference → pending state BEFORE redirect
+	await db.subscriptions.create({
+		reference,
+		user_id: userId,
+		plan_id: planId,
+		status: "pending",
+		created_at: new Date(),
+	});
+
+	const token = await getAuthToken();
+	const url = buildCheckoutUrl({
+		planId,
+		reference,
+		token,
+		redirectUrl: `${process.env.APP_URL}/subscribe/success`,
+		cancelUrl: `${process.env.APP_URL}/subscribe/cancel`,
+	});
+
+	res.redirect(url);
+});
+```
+
+<Callout type="warn">
+**Warning:** Always persist the `reference` before redirect. If a webhook arrives before your redirect handler runs, you need the row to already exist in your DB.
+
+</Callout>
+
+### Redirect vs webhook — critical distinction
+
+| Signal                                   | Reliable?                                   | Use for               |
+| ---------------------------------------- | ------------------------------------------- | --------------------- |
+| `redirect_url` callback                  | NO — can be bypassed, duplicated, or missed | UI feedback only      |
+| `cancel_url` callback                    | NO — same caveats as above                  | UI feedback only      |
+| `subscription.payment.succeeded` webhook | YES                                         | Activate subscription |
+| `subscription.created` webhook           | YES                                         | Store `sub_id`        |
+
+<Callout type="warn">
+**Critical:** Never activate a subscription based on a redirect URL callback. Only webhook events are authoritative.
+
+</Callout>
+
+5
+
+## Handle webhooks
+
+<Callout type="info">
+Webhooks are the only reliable mechanism for subscription state changes. Build webhook handling before testing end-to-end flows.
+
+</Callout>
+
+### Mandatory processing order
+
+This sequence is non-negotiable. Deviating from it causes race conditions and missed activations.
+
+1.  Verify HMAC signature — reject immediately if invalid.
+2.  Deduplicate — check if the event ID was already processed.
+3.  Persist the raw event to your database.
+4.  Respond HTTP 200 — do this **before** applying business logic.
+5.  Apply business logic asynchronously.
+
+<Callout type="warn">
+**Warning:** ACK (HTTP 200) before business logic. If your business logic throws, Safepay will not retry if you already responded 200. Log failures internally and handle via your own retry mechanism.
+
+</Callout>
+
+### HMAC signature verification
+
+Every webhook includes an HMAC-SHA256 signature. Verify it before processing any event. Use the **raw** request body (not parsed JSON).
+
+```javascript title="Verify HMAC signature in NodeJS"
+const crypto = require("crypto");
+
+function verifyHmacSignature(secret, rawBody, receivedSignature) {
+	const computed = crypto
+		.createHmac("sha256", secret)
+		.update(rawBody) // Use RAW buffer — not parsed JSON
+		.digest("hex");
+
+	// timingSafeEqual prevents timing-based attacks
+	return crypto.timingSafeEqual(Buffer.from(computed, "hex"), Buffer.from(receivedSignature, "hex"));
+}
+
+// In Express: capture raw body BEFORE json() middleware
+app.use("/webhook/safepay", express.raw({ type: "application/json" }));
+```
+
+Conceptual (any language):
+
+1.  Read the `X-SFPY-SIGNATURE` header.
+2.  Compute `HMAC-SHA256(secret, raw_body)` as hex.
+3.  Compare with a constant-time equality function (`timingSafeEqual` / `hash_equals`).
+4.  Only then parse JSON and process the event.
+
+<Callout type="warn">
+**Critical:** Use `timingSafeEqual` (Node) or `hash_equals` (PHP) — not `===`. Plain string comparison is vulnerable to timing attacks that can allow signature forgery.
+
+</Callout>
+
+### Full webhook handler
+
+```javascript title="Full webhook handler in NodeJS"
+app.post("/webhook/safepay", express.raw({ type: "application/json" }), async (req, res) => {
+	const signature = req.headers["x-sfpy-signature"];
+	const rawBody = req.body; // Buffer — required for HMAC
+
+	// 1. Verify signature
+	if (!verifyHmacSignature(process.env.SAFEPAY_WEBHOOK_SECRET, rawBody, signature)) {
+		console.warn("Invalid HMAC — rejecting webhook");
+		return res.status(401).send("Invalid signature");
+	}
+
+	const event = JSON.parse(rawBody);
+
+	// 2. Deduplicate
+	const alreadyProcessed = await db.webhookEvents.exists({ event_id: event.id });
+	if (alreadyProcessed) {
+		return res.status(200).send("Duplicate — already processed");
+	}
+
+	// 3. Persist raw event
+	await db.webhookEvents.insert({
+		event_id: event.id,
+		type: event.type,
+		payload: JSON.stringify(event),
+		received_at: new Date(),
+		processed: false,
+	});
+
+	// 4. ACK immediately
+	res.status(200).send("OK");
+
+	// 5. Process asynchronously
+	processWebhookEvent(event).catch((err) => {
+		console.error(`Webhook processing failed [${event.id}]:`, err);
+		// Alert your team — do NOT re-throw here
+	});
+});
+```
+
+### Business logic handler
+
+Handle subscription events by type. Use `reference` as your primary lookup key.
+
+```javascript title="Business logic handler in NodeJS"
+async function processWebhookEvent(event) {
+	switch (event.type) {
+		case "subscription.created":
+			// Store mapping: reference -> sub_id
+			await db.subscriptions.upsert({
+				reference: event.data.reference,
+				sub_id: event.data.subscription_id,
+				status: "pending",
+				plan_id: event.data.plan_id,
+			});
+			break;
+
+		case "subscription.payment.succeeded":
+			// Primary activation event — use reference to correlate
+			await db.subscriptions.updateByReference(event.data.reference, {
+				status: "active",
+				last_txn_id: event.data.transaction_id,
+				activated_at: new Date(),
+			});
+			await grantUserAccess(event.data.reference);
+			break;
+
+		case "subscription.payment.failed":
+			await db.subscriptions.updateByReference(event.data.reference, {
+				status: "payment_failed",
+			});
+			await notifyUserPaymentFailed(event.data.reference);
+			break;
+
+		case "subscription.cancelled":
+			await db.subscriptions.updateByReference(event.data.reference, {
+				status: "cancelled",
+				cancelled_at: new Date(),
+			});
+			await revokeUserAccess(event.data.reference);
+			break;
+
+		case "payment.succeeded":
+			// For subscription flows: NO-OP
+			// This event carries no reference — use subscription.payment.succeeded instead
+			// Only handle here if you also process standalone one-time payments
+			break;
+
+		default:
+			console.log(`Unhandled event type: ${event.type}`);
+	}
+
+	await db.webhookEvents.markProcessed(event.id);
+}
+```
+
+### Subscription event reference
+
+| Event                            | Has `reference`? | Has `sub_id`? | Action required                                  |
+| -------------------------------- | ---------------- | ------------- | ------------------------------------------------ |
+| `subscription.created`           | YES              | YES           | Store `reference` + `sub_id`, status = `pending` |
+| `subscription.payment.succeeded` | YES              | YES           | Activate subscription, grant access              |
+| `subscription.payment.failed`    | YES              | YES           | Mark failed, notify user                         |
+| `subscription.cancelled`         | YES              | YES           | Revoke access, update status                     |
+| `payment.succeeded`              | NO               | NO            | NO-OP in subscription flows                      |
+
+Event payloads carry the identifiers listed above (`reference`, `subscription_id` / `sub_id`, and on payment success `transaction_id`). Do not invent additional webhook JSON shapes beyond these fields and event types.
+
+6
+
+## Event correlation — key architecture
+
+Understanding which identifiers appear on which events is critical to building a correct integration.
+
+### Identifier map
+
+| Identifier                   | What it is                                     | Present on                                       |
+| ---------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| `reference`                  | YOUR internal ID — the primary correlation key | `subscription.created`, `subscription.payment.*` |
+| `sub_id` (`sub_...`)         | Safepay subscription object ID                 | `subscription.created`, `subscription.payment.*` |
+| `transaction_id` (`txn_...`) | Individual payment transaction ID              | `subscription.payment.succeeded`                 |
+| `tracker` (`track_...`)      | Low-level payment tracker token                | `payment.succeeded` ONLY                         |
+
+### Correlation strategy
+
+```text title="Correct correlation architecture"
+// Correct correlation architecture:
+//
+// subscription.created → reference (yours) + sub_id (Safepay's)
+// subscription.payment.*  → reference (yours) — use this to look up your record
+//
+// WRONG: trying to link track_... from payment.succeeded to sub_...
+// CORRECT: ignore payment.succeeded in subscription flows entirely
+
+// Store both identifiers on subscription.created:
+await db.subscriptions.upsert({
+  reference: event.data.reference,           // Primary key for your lookups
+  sub_id: event.data.subscription_id,        // Use for Safepay API calls (cancel, etc.)
+  status: 'pending'
+});
+
+// All subsequent events: look up by reference
+const subscription = await db.subscriptions.findByReference(event.data.reference);
+```
+
+<Callout type="warn">
+**Critical:** `payment.succeeded` fires for ALL payments on your account — including one-time payments. It has no subscription context. Do not attempt to correlate it with subscription events.
+
+</Callout>
+
+7
+
+## Environment configuration
+
+### Environment variables
+
+```text title="Environment variables"
+# .env.sandbox
+SAFEPAY_HOST=https://sandbox.api.getsafepay.com
+SAFEPAY_CHECKOUT_HOST=https://sandbox.api.getsafepay.com
+SAFEPAY_ENV=sandbox
+SAFEPAY_SECRET_KEY=your_sandbox_secret_key
+SAFEPAY_WEBHOOK_SECRET=your_sandbox_hmac_key
+
+# .env.production
+SAFEPAY_HOST=https://api.getsafepay.com
+SAFEPAY_CHECKOUT_HOST=https://getsafepay.com
+SAFEPAY_ENV=production
+SAFEPAY_SECRET_KEY=your_live_secret_key
+SAFEPAY_WEBHOOK_SECRET=your_live_hmac_key   # DIFFERENT from sandbox
+```
+
+| Host     | Sandbox                              | Live                         |
+| -------- | ------------------------------------ | ---------------------------- |
+| API      | `https://sandbox.api.getsafepay.com` | `https://api.getsafepay.com` |
+| Checkout | `https://sandbox.api.getsafepay.com` | `https://getsafepay.com`     |
+
+<Callout type="warn">
+**Critical:** The HMAC webhook secret is DIFFERENT between Sandbox and Live dashboards. Verify you are using the correct key for each environment before going live.
+
+</Callout>
+
+### Dashboard paths
+
+| Resource         | Sandbox                                    | Live                                    |
+| ---------------- | ------------------------------------------ | --------------------------------------- |
+| Dashboard        | `sandbox.api.getsafepay.com/dashboard`     | `getsafepay.com/dashboard`              |
+| HMAC Key         | Sandbox Dashboard → Developers → Endpoints | Live Dashboard → Developers → Endpoints |
+| Webhook Setup    | Sandbox Dashboard → Developers → Endpoints | Live Dashboard → Developers → Endpoints |
+| Test Webhook API | Available                                  | N/A                                     |
+
+8
+
+## Webhook configuration in dashboard
+
+1.  Go to **Dashboard → Developers → Endpoints**.
+2.  Click **+ Add an endpoint**.
+3.  Enter your public HTTPS webhook URL.
+4.  Click **Create**.
+5.  Open the endpoint details (three-dot menu → Details).
+6.  Subscribe to the following events (select **v2.0.0**):
+    - `subscription.created`
+    - `subscription.payment.succeeded`
+    - `subscription.payment.failed`
+    - `subscription.cancelled`
+
+<Callout type="warn">
+**Warning:** Do not subscribe to `payment.succeeded` for subscription-only integrations. It carries no subscription context and will cause correlation confusion.
+
+</Callout>
+
+### Webhook server requirements
+
+| Requirement           | Test environment                | Live environment                |
+| --------------------- | ------------------------------- | ------------------------------- |
+| Protocol              | HTTP or HTTPS                   | HTTPS only                      |
+| TLS version           | TLSv1.2 or TLSv1.3              | TLSv1.2 or TLSv1.3              |
+| Allowed ports (HTTP)  | 80, 8080, 8888                  | Not allowed                     |
+| Allowed ports (HTTPS) | 443, 8443, 8843                 | 443, 8443, 8843                 |
+| Response timeout      | 10 seconds                      | 10 seconds                      |
+| Expected response     | HTTP 200                        | HTTP 200                        |
+| Retry behavior        | Failed events go to retry queue | Failed events go to retry queue |
+
+## Subscription status reference
+
+| Status           | Meaning                            | Triggered by                     |
+| ---------------- | ---------------------------------- | -------------------------------- |
+| `pending`        | Checkout initiated, no payment yet | Your system on checkout creation |
+| `active`         | Billing ongoing, access granted    | `subscription.payment.succeeded` |
+| `payment_failed` | Latest charge failed               | `subscription.payment.failed`    |
+| `cancelled`      | Subscription stopped               | `subscription.cancelled`         |
+
+<Callout type="info">
+Always derive status from the latest webhook event. Do not infer status from API polling or redirect callbacks.
+
+</Callout>
+
+9
+
+## Test and go live
+
+Before going live, complete every item below. Test end-to-end in Sandbox first, then switch to live credentials.
+
+### Go-live checklist
+
+#### Webhook security
+
+- [ ] HMAC signature verification implemented with `timingSafeEqual` / `hash_equals`
+- [ ] Using raw request body (Buffer / raw string) for HMAC computation — not parsed JSON
+- [ ] Live HMAC key loaded from environment variable — not hardcoded
+- [ ] Sandbox and live HMAC keys are different — confirmed
+
+#### Event handling
+
+- [ ] Deduplication logic in place (event ID stored and checked)
+- [ ] HTTP 200 returned **before** business logic executes
+- [ ] Raw webhook payload logged to database
+- [ ] `payment.succeeded` is a NO-OP in the subscription flow
+- [ ] All `subscription.*` events handled: `created`, `payment.succeeded`, `payment.failed`, `cancelled`
+
+#### Data architecture
+
+- [ ] `reference` stored on subscription creation (before redirect)
+- [ ] `sub_id` stored from `subscription.created` webhook
+- [ ] All state changes driven by `reference` from webhook events
+
+#### Infrastructure
+
+- [ ] Webhook endpoint publicly reachable via HTTPS
+- [ ] TLSv1.2 or TLSv1.3 on live endpoint
+- [ ] Port 443, 8443, or 8843 in use
+- [ ] Live plan created in Live Dashboard
+- [ ] Webhook endpoint registered in Live Dashboard
+- [ ] End-to-end test payment completed in Sandbox
+
+#### Configuration
+
+- [ ] All credentials loaded from environment variables
+- [ ] No hardcoded keys or URLs
+- [ ] Sandbox and live environments fully separated
+- [ ] Token caching implemented with 5-minute expiry buffer
+
+When you are ready to go live:
+
+1.  Apply for / use your live Safepay account.
+2.  Create the live plan and register the live webhook endpoint.
+3.  Switch environment variables to live hosts and live keys.
+
+## Common issues and fixes
+
+### Checkout not loading
+
+- Token expired — regenerate before each checkout session.
+- Wrong `planId` — verify the plan exists in the correct environment.
+- Sandbox credentials used against the live endpoint or vice versa.
+
+### Subscription not activating
+
+- Webhook endpoint not publicly reachable.
+- Webhook not registered in Dashboard — check **Developers → Endpoints**.
+- HMAC verification failing — confirm you are using the raw body, not parsed JSON.
+- Wrong HMAC key — sandbox and live keys are different.
+- Business logic updating on redirect instead of webhook.

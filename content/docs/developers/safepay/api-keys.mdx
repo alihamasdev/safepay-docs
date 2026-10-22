@@ -1,0 +1,63 @@
+---
+title: "API keys"
+description: "Locate your API keys and understand how to use them"
+---
+
+### Understanding Safepay API Credentials
+
+API credentials are essential for authenticating and authorizing the interaction between your application and Safepay's services. They ensure that each request made to Safepay's APIs is secure and attributed to the correct account. You will need these credentials to initiate transactions, retrieve data, and manage payments seamlessly.
+
+Each API request that you make to Safepay is processed through an API credential linked to your company account. For an API request to be successful, you must:
+
+- For test transactions, have a sandbox account.
+- For live transactions, have an approved and enabled production account.
+
+Each type of account comes with its own set of API keys:
+
+1.  **Public API Key** - Used to identify your account.
+2.  **Private API Secret Key** - Used to authenticate API requests.
+3.  **Private Webhook Secret Key** - Used to verify webhook signatures.
+
+### Locating Your API Keys
+
+To locate your API keys, first log in to the appropriate dashboard:
+
+1.  For sandbox, use this [sandbox link to log in](https://sandbox.api.getsafepay.com/dashboard/login).
+2.  For production, use this [production link to log in](https://getsafepay.com/dashboard/login).
+
+Regardless of which dashboard you are using, the UI is the same, and you can locate your API keys using the following steps:
+
+1.  Navigate to **dashboard/developers/api** or click the "Developers" button on the top right of the navigation bar.
+2.  The **Public API Key** is the first item on that page and starts with "sec\_". You can click the copy-to-clipboard icon to copy this API key for your records.
+3.  The **Private API Secret Key** is the second item on that page. You can click the copy-to-clipboard icon to copy this secret key for your records.
+
+### Locating Your Webhook Secret Key
+
+To find your Webhook secret key:
+
+1.  Navigate to **developers/endpoints** or click the "Endpoints" link on the vertical navigation bar.
+2.  Click the "View shared secret" button, which will open a dialog box.
+3.  You can click the "Eye-off" icon to view the secret key or click the copy-to-clipboard icon to copy the webhook secret key for your records.
+
+<Callout type="warn">
+The API Secret Key and Webhook Secret Key should not be shared publicly. Keep them safe by accessing them through a secrets manager or environment variables. Do not check them in with your code.
+
+</Callout>
+
+### Changing Your Secret Keys
+
+To change your API Secret Key:
+
+1.  Navigate to **dashboard/developers/api** or click the "Developers" button on the top right of the navigation bar.
+2.  Click the "Update Key" button next to the API Secret Key.
+
+To change your Webhook Secret Key:
+
+1.  Navigate to **developers/endpoints** or click the "Endpoints" link on the vertical navigation bar.
+2.  Click the "View shared secret" button, which will open a dialog box.
+3.  Click the "Rotate" button.
+
+<Callout type="info">
+If you generate new Secret Keys or Webhook Secret Keys, the old ones stop working immediately.
+
+</Callout>

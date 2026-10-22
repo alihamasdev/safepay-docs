@@ -1,0 +1,21 @@
+---
+title: "Test cards"
+description: "Simulate payments to test your integration."
+---
+
+This document contains a list of test card numbers along with their expected outcomes for various types of authentication scenarios. Each test type includes details on the expected ECI, indicator, action, result, and consumer reference codes that can be used to verify correct processing.
+
+| Test Type                                | Card Numbers                                                                | Expected ECI | Action                                   |
+| ---------------------------------------- | --------------------------------------------------------------------------- | ------------ | ---------------------------------------- |
+| Successful Frictionless Authentication   | `4456 5300 0000 1005`<br />`5200 0000 0000 1005`                            | 05           | Proceed                                  |
+| Unsuccessful Frictionless Authentication | `4456 5300 0000 1013`<br />`5200 0000 0000 1013`                            | 07           | Don’t proceed                            |
+| Attempts Processing Frictionless Auth.   | `4456 5300 0000 1021`<br />`5200 0000 0000 1021`                            | 06           | Proceed                                  |
+| Unavailable Frictionless Authentication  | `4456 5300 0000 1039`<br />`5200 0000 0000 1039`                            | 07           | Proceed <br />No liability shift         |
+| Rejected Frictionless Authentication     | `4456 5300 0000 1047`<br />`5200 0000 0000 1047`                            | 07           | Don’t proceed                            |
+| Auth. not Available on Lookup            | `4456 5300 0000 1054`<br />`5200 0000 0000 1054`                            | -            | Proceed <br />No liability shift         |
+| Enrollment Check Error                   | `4456 5300 0000 1062`<br />`5200 0000 0000 1062`                            | -            | Proceed <br />No liability shift         |
+| Time-Out                                 | `4456 5300 0000 1070`<br />`5200 0000 0000 1070`                            | 07           | Proceed <br />No liability shift         |
+| Bypassed Authentication                  | `4456 5300 0000 1088`<br />`5200 0000 0000 1088`                            | -            | Proceed <br />No liability shift         |
+| Successful Step-Up Authentication (3DS)  | `4000 0000 0000 2503`<br />`4456 5300 0000 1096`<br />`5200 0000 0000 1096` | 05           | Proceed                                  |
+| Unsuccessful Step-Up Authentication      | `4456 5300 0000 1104`<br />`5200 0000 0000 1104`                            | 07           | Don’t proceed                            |
+| Unavailable Step-Up Authentication       | `4456 5300 0000 1112`<br />`5200 0000 0000 1112`                            | 07           | Retry or process without liability shift |

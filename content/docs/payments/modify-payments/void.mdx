@@ -1,0 +1,84 @@
+---
+title: "Void"
+description: "Void a capture or a refund to prevent it from being processed"
+---
+
+For payment methods that support voids, you may use the [Void API](https://apidocs.getsafepay.com/#845c859f-8212-43b3-889c-3a1adcaf99c9).
+
+Voids may apply to captures, sales, and refunds although these capabilities vary between payment methods.
+
+### Void Kinds
+
+| Kind           | Explanation                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VOID_CAPTURE` | Used for voiding a regular standalone capture.                                                                                              |
+| `VOID_PAYMENT` | Used for voiding a combined authorization and capture. Relevant for subscription payments or any payment where `do_capture: true` was used. |
+| `VOID_REFUND`  | Used for voiding a refund. You must provide the **refund token**, which is available from the tracker details page.                         |
+
+<Callout type="info">
+Note that a void may not take effect if the settlement cycle has already run.
+
+</Callout>
+
+```javascript title="Payment in NodeJS"
+const safepay = require("@sfpy/node-core")({
+	api_key: "YOUR_SERVER_API_KEY",
+	authType: "jwt",
+	host: "https://sandbox.api.getsafepay.com",
+});
+
+(async () => {
+	try {
+		const response = await safepay.order.payments.void({
+			tracker: "track_1a46dc70-91f9-4892-8e25-0bb5205b69c7",
+			payload: {
+				kind: "VOID_CAPTURE",
+			},
+		});
+		console.log(response);
+	} catch (err) {
+		console.error(err);
+	}
+})();
+```
+
+```json title="Sample Response"
+{
+	"data": {
+		"tracker": {
+			"token": "track_1a46dc70-91f9-4892-8e25-0bb5205b69c7",
+			"client": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+			"environment": "sandbox",
+			"state": "TRACKER_VOIDED",
+			"intent": "CYBERSOURCE",
+			"mode": "payment",
+			"next_actions": {
+				"CYBERSOURCE": {
+					"kind": "NOOP",
+					"request_id": "req_9ea53be5-828f-4730-b187-9d3d350ab72a"
+				}
+			},
+			"purchase_totals": {
+				"quote_amount": {
+					"currency": "PKR",
+					"amount": 600000
+				},
+				"base_amount": {
+					"currency": "PKR",
+					"amount": 600000
+				},
+				"conversion_rate": {
+					"base_currency": "PKR",
+					"quote_currency": "PKR",
+					"rate": 1
+				}
+			}
+		},
+		"action": {}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```

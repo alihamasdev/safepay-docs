@@ -1,0 +1,95 @@
+---
+title: "Raast payment statuses"
+description: "Interpret Raast payment statuses and tracker states during checkout."
+---
+
+Safepay exposes two related pieces of state:
+
+- `raast_payment.status` describes the detailed rail-level lifecycle of the _current_ Raast payment (QR or RTP). It is returned by the initiation response, full tracker reads, and now the lightweight status endpoint too.
+- `tracker.state` is the checkout-level outcome.
+
+These are **not** a strict one-to-one mapping. A cancelled, rejected, or failed Raast payment deliberately does not move `tracker.state` — this mirrors how a declined card authorization never changes tracker state either, so the checkout stays open for an immediate retry or switch instead of looking permanently dead. `tracker.state` only changes when money genuinely progresses or completes. Use `tracker.state` to know whether the checkout is captured; use `raast_payment.status` to know what the current attempt is actually doing, including a failure that `tracker.state` won't show.
+
+## Raast status mapping
+
+| Raast payment status | Tracker state            | Meaning during checkout                                                                                                                                                                                      |
+| -------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `UNSPECIFIED`        | Unchanged                | Safepay has no authoritative initiation result yet. A retry is handled idempotently.                                                                                                                         |
+| `INITIATED`          | `TRACKER_STARTED`        | The request or QR was created and is awaiting payment.                                                                                                                                                       |
+| `RECEIVED`           | `TRACKER_STARTED`        | Raast received the payment instruction; continue waiting.                                                                                                                                                    |
+| `AUTHORIZED`         | `TRACKER_STARTED`        | The payment is progressing; continue waiting for capture.                                                                                                                                                    |
+| `CAPTURED`           | `TRACKER_ENDED`          | The payment was captured. Show checkout success.                                                                                                                                                             |
+| `SETTLED`            | `TRACKER_ENDED`          | The payment was settled. It remains a successful checkout.                                                                                                                                                   |
+| `CANCELLED`          | Unchanged                | The request was cancelled. `tracker.state` stays whatever it already was (typically `TRACKER_STARTED`) — read this field directly to detect it. The customer may retry or switch payment method immediately. |
+| `REJECTED`           | Unchanged                | The payer or rail rejected the request. Same handling as `CANCELLED`.                                                                                                                                        |
+| `FAILED`             | Unchanged                | The payment failed. Same handling as `CANCELLED`.                                                                                                                                                            |
+| `REVERSED`           | `TRACKER_REVERSED`       | A completed payment was reversed.                                                                                                                                                                            |
+| `PARTIALLY_REFUNDED` | `TRACKER_PARTIAL_REFUND` | Part of the captured amount was refunded.                                                                                                                                                                    |
+| `REFUNDED`           | `TRACKER_REFUNDED`       | The captured amount was fully refunded.                                                                                                                                                                      |
+
+<Callout type="warn">
+`CANCELLED`, `REJECTED`, and `FAILED` are the one place these two fields diverge on purpose. Don't wait for `tracker.state` to reflect a failed Raast attempt — it won't. Poll `raast_payment.status` for that.
+
+</Callout>
+
+## Poll the lightweight tracker endpoint
+
+```
+curl --request GET \
+  --url https://sandbox.api.getsafepay.com/order/payments/v3/track_550e8400-e29b-41d4-a716-446655440000/status \
+  --header 'Authorization: Bearer YOUR_CHECKOUT_TOKEN'
+```
+
+The endpoint returns the base tracker plus the current detail for whichever payment rail is active — `raast_payment` for a Raast checkout. It does not run capability discovery or load attempt history, older/superseded payment records, settlements, or other relationships.
+
+```
+{
+  "data": {
+    "tracker": {
+      "token": "track_550e8400-e29b-41d4-a716-446655440000",
+      "environment": "sandbox",
+      "state": "TRACKER_STARTED",
+      "payment_method_kind": "wallet",
+      "intent": "RAAST",
+      "mode": "payment",
+      "entry_mode": "raw",
+      "next_actions": {
+        "RAAST": {
+          "kind": "NOOP",
+          "request_id": "req_7b7b964f-6917-44e5-a06e-d7e92471e536"
+        }
+      },
+      "purchase_totals": {
+        "quote_amount": { "currency": "PKR", "amount": 12500 }
+      },
+      "raast_payment": {
+        "kind": "RTP",
+        "request_id": "7b7b964f-6917-44e5-a06e-d7e92471e536",
+        "payment_id": "pm_96bc0ef4-7857-47fb-a345-c411a23aeb92",
+        "status": "REJECTED",
+        "failure_code": "invalid_identifier",
+        "expires_at": { "seconds": 1786094100 }
+      }
+    }
+  },
+  "status": { "errors": [], "message": "success" }
+}
+```
+
+Note `tracker.state` is `TRACKER_STARTED` even though this RTP was rejected — that's the divergence described above. The checkout is still open; `raast_payment.status` is what tells you the attempt failed.
+
+<Callout type="info">
+Retain `raast_payment.expires_at` from the initiation response as a fallback. The lightweight status response now includes `raast_payment`, so you can also read its expiry directly on each poll.
+
+</Callout>
+
+## Polling behavior
+
+- Continue polling while `tracker.state` is `TRACKER_STARTED`.
+- Use a delay and backoff between requests; do not issue concurrent polls for the same tracker.
+- Show success only for `TRACKER_ENDED`.
+- On every poll, also check `raast_payment.status`. If it's `CANCELLED`, `REJECTED`, or `FAILED`, unlock the UI for a retry or a switch back to Dynamic QR — do not wait for `tracker.state` to change, since it won't for these three statuses.
+- Stop at the locally stored Raast expiry if neither a capture nor a failure status has arrived.
+- Treat network errors as temporary unless your local timeout has elapsed.
+
+The endpoint returns `404` when the tracker does not exist. A malformed or unauthorized request should not be treated as a pending payment.

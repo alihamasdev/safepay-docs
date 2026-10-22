@@ -1,0 +1,170 @@
+---
+title: "Tokenization implementation options"
+description: "Understand the different ways to implement Tokenization."
+---
+
+Safepay supports advanced tokenization flows that allow you to securely save customer cards for later use. This is useful for recurring billing, quick checkouts, or one-click checkout workflows.
+
+There are two primary ways to tokenize card details via our API:
+
+- Saving the card directly using the **Instrument** flow.
+- Tokenizing the card during payment using **Action Chaining** with `do_card_on_file`.
+
+---
+
+## Option 1: Save Card Using Instrument Mode
+
+1
+
+## Create a tracker with mode instrument
+
+Use the `/order/payments/v3/` endpoint and set `mode: instrument`. This creates a tracker to save a card.
+
+Instrument mode allows different entry modes, and additional options please see each example and decide which is best for your usecase.
+
+```bash title="Using Merchant Shoppers"
+curl --location --request POST 'https://sandbox.api.getsafepay.com/order/payments/v3/' \
+-H 'Authorization: Bearer CLIENT_SIDE_AUTH_TOKEN' \
+-H 'Content-Type: application/json' \
+--data '{
+  "merchant_api_key": "sec_a7cc6fc1-088d-4f35-9dac-2bab2cb234a1",
+  "user": "cus_b4afd638-41bf-4831-af07-587b51269f38",
+  "intent": "CYBERSOURCE",
+  "mode": "instrument",
+  "entry_mode": "raw",
+  "is_account_verification": true,
+  "currency": "PKR"
+}'
+```
+
+```json title="Response to using Merchant Shoppers"
+{
+	"data": {
+		"tracker": {
+			"token": "track_e244f1fa-4af4-4dc4-8d6f-8101b36bedf6",
+			"client": "sec_a7cc6fc1-088d-4f35-9dac-2bab2cb234a1",
+			"environment": "sandbox",
+			"state": "TRACKER_STARTED",
+			"intent": "CYBERSOURCE",
+			"mode": "instrument",
+			"entry_mode": "raw",
+			"customer": "cus_b4afd638-41bf-4831-af07-587b51269f38",
+			"next_actions": {
+				"CYBERSOURCE": {
+					"kind": "PAYER_AUTH_SETUP"
+				},
+				"MPGS": {
+					"kind": "NOOP"
+				}
+			},
+			"purchase_totals": {
+				"quote_amount": {
+					"currency": "PKR",
+					"amount": 500
+				},
+				"base_amount": {
+					"currency": "PKR",
+					"amount": 500
+				},
+				"conversion_rate": {
+					"base_currency": "PKR",
+					"quote_currency": "PKR",
+					"rate": 1
+				}
+			},
+			"metadata": {}
+		},
+		"capabilities": {
+			"CYBERSOURCE": true,
+			"MPGS": true
+		}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```
+
+<Callout type="info">
+-   Make sure the `mode="instrument"` and `entry_mode="raw"`
+-   Add your customer token to the request body
+-   The advantage of zero-amount authorization is that it removes the need to reverse the transaction.
+
+</Callout>
+
+- Proceed with Payer Authentication Setup
+- Proceed with Payer Authentication Enrollment
+- Proceed with Authorization
+
+## Option 2: Tokenize During Payment Using Action Chaining
+
+1
+
+- Create a standard payment tracker - Use `mode: payment` to create a regular tracker.
+- Proceed with Payer Authentication Setup
+- Proceed with Payer Authentication Enrollment
+
+2
+
+## Authorization Step
+
+To save the card along with the authorization, include the `do_card_on_file` flag.
+
+```bash title="Example"
+curl --location --request POST 'https://sandbox.api.getsafepay.com/order/payments/v3/track_dccdef16-008e-4fae-81cc-1b7d81bf6c44' \
+-H 'Authorization: Bearer CLIENT_SIDE_AUTH_TOKEN' \
+-H 'Content-Type: application/json' \
+--data '{
+  "payload": {
+    "authorization": {
+      "do_capture": false,
+      "do_card_on_file": true
+    }
+  }
+}'
+```
+
+<Callout type="info">
+This flow is ideal if you want to save the card and also process a payment in the same flow. You can additionally choose `capture: true` if you want to do a combined sale (Authorization + Capture) or keep them separate by `capture: false` which will only authorize the payment.
+
+</Callout>
+
+---
+
+## Card saving flow
+
+```mermaid
+sequenceDiagram
+  participant Customer
+  participant Merchant Website
+  participant Safepay
+
+  Customer->>Merchant Website: Checkout + Card Entry
+  Merchant Website->>Safepay: Create tracker
+  Safepay-->>Merchant Website: Respond with tracker token
+  Merchant Website->>Safepay: Begin 3DS Payer Authentication
+  Safepay-->>Customer: Redirect to ACS
+  Customer-->>Safepay: Complete challenge
+  Safepay-->>Merchant Website: Card saved - Redirect back
+  Merchant Website->>Customer: Show confirmation
+```
+
+---
+
+## Choosing the Right Flow
+
+| Flow            | Description                                             | Ideal For                             |
+| --------------- | ------------------------------------------------------- | ------------------------------------- |
+| Instrument      | Save a card independently of a payment                  | Card-on-file, Adding a payment method |
+| Action Chaining | Save card during checkout using `do_card_on_file: true` | Authorization, or combined sale       |
+
+---
+
+## Reusing Tokens
+
+Once a card is tokenized (via either flow), use the customer token returned in the action response to:
+
+- Show customers their saved cards.
+- Perform MIT (Merchant-Initiated Transactions).
+- Reduce payment friction for loyal customers.

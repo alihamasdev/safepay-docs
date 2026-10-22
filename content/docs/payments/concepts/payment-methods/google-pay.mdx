@@ -1,0 +1,132 @@
+---
+title: "Google Pay on Safepay"
+description: "Learn how to accept Google Pay through Safepay's hosted checkout."
+---
+
+# Google Pay™
+
+## Overview
+
+Safepay supports **Google Pay™** on its hosted checkout pages, enabling customers to complete payments using any credit or debit card saved to their Google Account.
+
+Merchants using Safepay’s hosted gateway do not need to take any additional steps or make any integration changes to add the hosted component to their website. **Google Pay is automatically enabled** on the hosted page for eligible merchants. All merchants must adhere to the Google Pay APIs [Acceptable Use Policy](https://payments.developers.google.com/terms/aup) and accept the terms defined in the [Google Pay API Terms of Service](https://payments.developers.google.com/terms/sellertos).
+
+This document outlines Safepay’s current integration in **Phase 1**, which includes only the **hosted checkout** experience. API-based merchant integrations are planned for future phases.
+
+---
+
+## Integration Type
+
+Safepay has implemented a **direct integration** with Google Pay using the [Google Pay JavaScript API](https://developers.google.com/pay/api/web/overview). The Google Pay button is rendered on Safepay’s hosted checkout page. When a customer clicks the button, the payment sheet is presented, and a secure token is received, decrypted, and processed via Safepay.
+
+In Phase 1:
+
+- Merchants do not require any integration changes
+- Safepay handles all token decryption and processing
+
+---
+
+## Gateway Parameters (For Future Direct API Integration)
+
+For PCI DSS-certified merchants integrating directly with Google Pay in the future, the following parameters should be used:
+
+```json title="Gateway parameters"
+{
+	"gateway": "safepay",
+	"gatewayMerchantId": ""
+}
+```
+
+---
+
+## Token Handling Options
+
+Safepay supports two secure methods for handling Google Pay payment tokens:
+
+### Merchant-Managed Decryption (Advanced, PCI-certified only)
+
+- The merchant decrypts the Google Pay token using a tool such as Tink.
+- Safepay receives the raw Primary Account Number (PAN) or network token for further processing.
+- This approach is recommended only for PCI DSS Level 1 merchants.
+
+### Safepay-Managed Decryption (Default and Recommended)
+
+- The merchant forwards the encrypted Google Pay token directly to Safepay.
+- Safepay decrypts the token on behalf of the merchant and securely processes the transaction.
+- This is the default method and requires no additional certification or cryptographic handling by the merchant.
+
+---
+
+## Recommended Authentication Method
+
+Safepay supports:
+
+- `PAN_ONLY`
+- `CRYPTOGRAM_3DS`
+
+<Callout type="info">
+**Safepay recommends using `CRYPTOGRAM_3DS`** to reduce fraud and increase issuer authorization rates.
+
+</Callout>
+
+---
+
+## Billing Address Handling
+
+- It is **recommended** to set `billingAddressRequired: true` in the Google Pay request object.
+- The returned billing address should be used to validate against the customer's existing profile.
+- **Note:** Shipping address cannot substitute billing address in any scenario.
+
+---
+
+## 3D Secure with PAN_ONLY
+
+Merchants receiving a PAN_ONLY token can:
+
+- Create a `payment_method` from the tokenized data
+- Use it to initiate a 3DS authentication session via Safepay’s 3DS API
+
+---
+
+## Compatibility
+
+| Feature     | Supported                                    |
+| ----------- | -------------------------------------------- |
+| Card Brands | Visa, MasterCard                             |
+| Methods     | Authorize, Capture, Refund                   |
+| Browsers    | Chrome, Firefox, Safari, Edge, Opera, UCWeb  |
+| Platforms   | Web (hosted checkout), Android (via browser) |
+
+---
+
+## Terms of Service
+
+By integrating Google Pay, you agree to comply with [Google’s Terms of Service](https://payments.google.com/payments/apis-secure/u/0/get_legal_document?ldo=0&ldt=buyertos).
+
+---
+
+## Resources
+
+### Web Merchants
+
+- [Google Pay Web Developer Documentation](https://developers.google.com/pay/api/web/overview)
+- [Integration Checklist](https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist)
+- [Brand Guidelines](https://developers.google.com/pay/api/web/guides/brand-guidelines)
+
+### Android Merchants
+
+- [Google Pay Android Developer Documentation](https://developers.google.com/pay/api/android/overview)
+- [Integration Checklist](https://developers.google.com/pay/api/android/guides/test-and-deploy/integration-checklist)
+- [Brand Guidelines](https://developers.google.com/pay/api/android/guides/brand-guidelines)
+
+---
+
+## Future Roadmap
+
+Safepay will introduce full API-based Google Pay support for merchants in a future release. This will include:
+
+- Google Pay integration guides for direct merchant integration
+- Token decryption tools
+- Sample merchant checkout implementations
+
+This document will be updated accordingly at that time.

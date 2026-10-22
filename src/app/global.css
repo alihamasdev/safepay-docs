@@ -36,3 +36,26 @@ html > body[data-scroll-locked] {
 body {
 	background-color: var(--color-fd-background);
 }
+
+/* Hide desktop sidebar collapse button */
+aside#nd-sidebar button[aria-label="Collapse Sidebar"],
+aside#nd-sidebar button[aria-controls="nd-sidebar"] {
+	display: none !important;
+}
+
+/* Hide tabs dropdown menu on desktop sidebar (shown on mobile drawer only) */
+aside#nd-sidebar button[aria-haspopup="menu"],
+aside#nd-sidebar button:has(.lucide-chevrons-up-down) {
+	display: none !important;
+}
+
+/* Sidebar header & viewport spacing adjustments */
+aside#nd-sidebar .my-2,
+aside#nd-sidebar div[class*="h-(--fd-header-height)"],
+aside#nd-sidebar > div > div:first-child {
+	margin-top: 0 !important;
+}
+
+#nd-page-panel {
+	margin-top: 0px;
+}

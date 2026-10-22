@@ -1,0 +1,176 @@
+---
+title: "Manage tokens"
+description: "Learn how to manage tokens you stored with Safepay."
+---
+
+You can use our APIs to manage stored payment credentials on behalf of your customers. For example, you can
+
+- Get a list of the shopper's stored payment details
+- Retrieve a single payment detail
+- Remove stored payment details
+
+## List stored payment details
+
+To see all the payment details sotred for a shopper, make a **GET** [`/customers/v1/{customerToken}/wallet/`](https://apidocs.getsafepay.com/#a0a3b828-4e95-456e-ad6f-dff050d3e3c4) request including:
+
+| Property | Type   | Mandatory | Description                                                            |
+| -------- | ------ | --------- | ---------------------------------------------------------------------- |
+| limit    | number | Y         | The upper bound on the number of results.                              |
+| page     | number | Y         | The offset from which to fetch limit many results. Enables pagination. |
+
+```javascript title="List stored payment details in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+try {
+	const response = safepay.customers.paymentMethods.list(customerToken, {
+		limit: 10,
+		offset: 0,
+	});
+} catch (err) {
+	console.log(error);
+}
+```
+
+The `listWallet` endpoint will return a response with your customer's stored payment methods. For example
+
+```json title="List stored payment details response"
+{
+	"data": {
+		"wallet": [
+			{
+				"token": "pm_bea00774-22ba-44ce-82c5-3cdd1a342e89",
+				"customer": "cus_2fc20245-e0f8-447f-af75-fa651cfd54aa",
+				"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+				"kind": 1,
+				"max_usage": 1,
+				"usage_interval": 0,
+				"is_deleted": false,
+				"cybersource": {
+					"token": "tms_b8543301-95ad-4eae-a86f-8d90a5ece0c7",
+					"customer_payment_method": "pm_bea00774-22ba-44ce-82c5-3cdd1a342e89",
+					"scheme": 2,
+					"bin": "520000",
+					"last_four": "1096",
+					"expiry_month": "12",
+					"expiry_year": "2023",
+					"created_at": {
+						"seconds": 1697697321
+					},
+					"updated_at": {
+						"seconds": 1697697321
+					}
+				},
+				"usage_count": 0,
+				"expires_at": {
+					"seconds": 1697783722
+				},
+				"created_at": {
+					"seconds": 1697697321
+				},
+				"updated_at": {
+					"seconds": 1697697321
+				}
+			}
+		],
+		"count": 1
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```
+
+## Find payment method
+
+To see a single stored payment method for a shopper, make a **GET** [`/customers/v1/{customerToken}/wallet/{paymentMethodToken}`](https://apidocs.getsafepay.com/#84ed7202-22f1-4131-8324-1ca2d8292992) request.
+
+```javascript title="Find stored payment method in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+try {
+	const response = safepay.customers.paymentMethods.find(customerToken, paymentMethodToken);
+} catch (err) {
+	console.log(error);
+}
+```
+
+The `findPaymentMethod` endpoint will return a response with your customer's stored payment method. For example
+
+```json title="Find payment method details response"
+{
+	"data": {
+		"token": "pm_bea00774-22ba-44ce-82c5-3cdd1a342e89",
+		"customer": "cus_2fc20245-e0f8-447f-af75-fa651cfd54aa",
+		"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+		"kind": 1,
+		"max_usage": 1,
+		"usage_interval": 0,
+		"is_deleted": false,
+		"cybersource": {
+			"token": "tms_b8543301-95ad-4eae-a86f-8d90a5ece0c7",
+			"customer_payment_method": "pm_bea00774-22ba-44ce-82c5-3cdd1a342e89",
+			"scheme": 2,
+			"bin": "520000",
+			"last_four": "1096",
+			"expiry_month": "12",
+			"expiry_year": "2023",
+			"created_at": {
+				"seconds": 1697697321
+			},
+			"updated_at": {
+				"seconds": 1697697321
+			}
+		},
+		"usage_count": 0,
+		"expires_at": {
+			"seconds": 1697783722
+		},
+		"created_at": {
+			"seconds": 1697697321
+		},
+		"updated_at": {
+			"seconds": 1697697321
+		}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```
+
+## Delete payment details
+
+You can delete a single token by its identifier, which is returned when you create a token. Alternatively, to find all tokens for a given shopper, you can [list stored payment details](/docs/payments/concepts/tokenization/manage-tokens#list-stored-payment-details) and get the id from the relevant item in the `wallets` array.
+
+To delete the token, make a **DELETE** [`/user/customers/v1/{customer}/wallet/{instrument}`](https://apidocs.getsafepay.com/#abca60ca-aa3a-496f-81f6-117aac7bce1f) request including the following parameters:
+
+| Property   | Type   | Mandatory | Description                                                        |
+| ---------- | ------ | --------- | ------------------------------------------------------------------ |
+| customer   | string | Y         | The token of the customer whose payment method you wish to delete. |
+| instrument | string | Y         | The token of the payment method you wish to delete.                |
+
+```javascript title="Delete a payment method in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+try {
+	const response = safepay.customers.paymentMethods.delete(customerToken, instrumentToken);
+} catch (err) {
+	console.log(error);
+}
+```
+
+<Callout type="info">
+After you delete payment details stored with Safepay, you must also delete any remaining payment details from your servers.
+
+</Callout>

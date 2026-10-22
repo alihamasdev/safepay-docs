@@ -1,0 +1,481 @@
+---
+title: "Tracker"
+description: ""
+---
+
+## Overview
+
+A `tracker` captures all events that pertain to to a single order. These include attempts to pay using a particular payment method, authorization responses from issuing banks, any error messages from failed actions, and more.
+
+To process an order:
+
+1
+
+Create a `tracker` using the [`setupPayment`](https://apidocs.getsafepay.com/#7fcfa13f-bf41-4b86-80c6-5ca178d80baa) request.
+
+2
+
+Progress the `tracker` state by executing all required actions determined by the initial configuration and the payment methods being used. These may be executed using the [Order](https://apidocs.getsafepay.com/#250ed8ec-7f84-4dcf-843b-f169ad7f4538) API.
+
+## Fields
+
+### Configuration
+
+There are several fields that constitute the primary configuration for a `tracker`.
+
+| Field                                                       | Description                                                      |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`intent`](/docs/payments/concepts/payment-intents)         | The payment integration used to perform actions on the `tracker` |
+| [`mode`](/docs/payments/concepts/payment-modes)             | The purpose of the `tracker`                                     |
+| [`entry_mode`](/docs/payments/concepts/payment-entry-modes) | The way payment method information is collected                  |
+
+Click on these to learn more about them.
+
+### Tracker state
+
+The `tracker` is ultimately a state machine that must progress its state to perform payments and post-payment actions such as voids or refunds. At any given time, it has an active or terminal `state` along with any next actions that may be performed on it.
+
+- state
+- next_actions
+
+| Field          | Description                                                         |
+| -------------- | ------------------------------------------------------------------- |
+| `state`        | The current state of the tracker                                    |
+| `next_actions` | The next action in the chain to progress the state of the `tracker` |
+
+To learn more, refer to [payment actions](/docs/payments/concepts/payment-actions).
+
+### People
+
+The `tracker` represents a payment order relationship between the merchant and a shopper.
+
+| Field      | Description          |
+| ---------- | -------------------- |
+| `client`   | The merchant details |
+| `customer` | The customer details |
+
+### Order details
+
+The `tracker` keeps track of the order total amount and the currency to be charged in.
+
+| Field             | Description                                                           |
+| ----------------- | --------------------------------------------------------------------- |
+| `purchase_totals` | The order total amount and currency                                   |
+| `metadata`        | Custom key value pairs to add additional information to the `tracker` |
+
+### Chronology
+
+The `tracker` maintains a history of all actions that were attempted and any notable events such as successful authorizations or payment errors.
+
+| Field      | Description                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `events`   | Notable events in sorted chronological order                                                                       |
+| `attempts` | Fine grained details for all individual attempts including actions that were executed and any errors that occurred |
+| `charge`   | The payment charge details for example remaining balance for partial refunds and transaction processing fees       |
+
+### Telemetry
+
+The `tracker` maintains information about the origins of the request.
+
+| Field      | Description                                                                |
+| ---------- | -------------------------------------------------------------------------- |
+| `device`   | Information about the user's device that was used to make payment requests |
+| `location` | Information about the location where the user was making the requests from |
+
+These are collected implicitly by the [Order](https://apidocs.getsafepay.com/#250ed8ec-7f84-4dcf-843b-f169ad7f4538) API. These details may also be explicitly set by sending appropriate values in the following HTTP headers:
+
+| Header key          | Value                 |
+| ------------------- | --------------------- |
+| `X-SFPY-IP-ADDRESS` | The IP address        |
+| `X-SFPY-USER-AGENT` | The user agent string |
+
+## Tracker reference
+
+Here's an example of a paid `tracker`.
+
+```json title="The tracker object"
+{
+	"token": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+	"environment": "production",
+	"state": "TRACKER_ENDED",
+	"intent": "CYBERSOURCE",
+	"mode": "payment",
+	"entry_mode": "raw",
+	"metadata": {
+		"order_id": {
+			"token": "meta_d1f6b00f-c322-4718-bde6-6a831a27e736",
+			"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+			"key": "order_id",
+			"value": "rZgn6JiNZvQ9qGwQYljj96MSN",
+			"created_at": {
+				"seconds": 1723194368
+			},
+			"updated_at": {
+				"seconds": 1723194368
+			}
+		},
+		"source": {
+			"token": "meta_d21e30ad-d870-4fd3-bc12-b175859d8a7c",
+			"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+			"key": "source",
+			"value": "shopify",
+			"created_at": {
+				"seconds": 1723194368
+			},
+			"updated_at": {
+				"seconds": 1723194368
+			}
+		}
+	},
+	"client": {
+		"token": "client_a590bbc6-15ec-4e37-a266-82d88b0dccfb",
+		"api_key": "sec_df38896a-de5c-4231-98c7-1020e82e6bba",
+		"name": "Safepay Merchant",
+		"email": "safepaymerchant@gmail.com",
+		"avatar": "https://storage.googleapis.com/safepay-assets/2fe90bde-c711-4d7b-a3c6-a7672f032387-safepay_logo.jpg"
+	},
+	"customer": {
+		"token": "guest_381090ca-a49e-4c84-9867-8138664b32d7",
+		"first_name": "Suleman",
+		"last_name": "Shishmahal",
+		"email": "suleman.shishmahal@gmail.com",
+		"phone": "+92 332 8211595"
+	},
+	"next_actions": {
+		"CYBERSOURCE": {
+			"kind": "NOOP",
+			"request_id": "req_a3380f44-8d2d-43e9-a421-86bb6350b440"
+		},
+		"MPGS": {
+			"kind": "NOOP"
+		}
+	},
+	"purchase_totals": {
+		"quote_amount": {
+			"currency": "PKR",
+			"amount": 9000
+		},
+		"base_amount": {
+			"currency": "PKR",
+			"amount": 9000
+		},
+		"conversion_rate": {
+			"base_currency": "PKR",
+			"quote_currency": "PKR",
+			"rate": 1
+		}
+	},
+	"charge": {
+		"token": "ch_09c74f8e-6e70-457c-a79c-ebef5a7a2971",
+		"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+		"client": "sec_df38896a-de5c-4231-98c7-1020e82e6bba",
+		"user": "guest_381090ca-a49e-4c84-9867-8138664b32d7",
+		"amount": {
+			"currency": "PKR",
+			"amount": 9000
+		},
+		"fees": {
+			"currency": "PKR",
+			"amount": 295
+		},
+		"tax": {
+			"currency": "PKR",
+			"amount": 34
+		},
+		"net": {
+			"currency": "PKR",
+			"amount": 8705
+		},
+		"signature": "9403f38db9b7445ebf7235b08496ddd9e8eb77d416dd822bcd2427168f19c3bf",
+		"capture": {
+			"token": "cap_5ade87aa-6e70-422a-8dc7-a25d77956aa6",
+			"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+			"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+			"intent": "CYBERSOURCE",
+			"cybersource_rid": "7231944106196418504979",
+			"is_voidable": true,
+			"kind": "CAPTURE",
+			"totals": {
+				"currency": "PKR",
+				"amount": 9000
+			},
+			"created_at": {
+				"seconds": 1723194411
+			},
+			"updated_at": {
+				"seconds": 1723194411
+			}
+		},
+		"balance": {
+			"currency": "PKR",
+			"amount": 9000
+		},
+		"created_at": {
+			"seconds": 1723194411
+		},
+		"updated_at": {
+			"seconds": 1723194411
+		}
+	},
+	"events": [
+		{
+			"intent": "CYBERSOURCE",
+			"type": "ENROLLMENT",
+			"intent_request_id": "7231943777226364904990",
+			"reason": "Successful enrollment",
+			"created_at": {
+				"seconds": 1723194379
+			}
+		},
+		{
+			"intent": "CYBERSOURCE",
+			"type": "AUTHORIZATION",
+			"intent_request_id": "7231944062856729104984",
+			"reason": "Successful authorization",
+			"purchase_totals": {
+				"currency": "PKR",
+				"amount": 9000
+			},
+			"created_at": {
+				"seconds": 1723194409
+			}
+		},
+		{
+			"intent": "CYBERSOURCE",
+			"type": "CAPTURE",
+			"intent_request_id": "7231944106196418504979",
+			"reason": "Successful transaction",
+			"purchase_totals": {
+				"currency": "PKR",
+				"amount": 9000
+			},
+			"created_at": {
+				"seconds": 1723194411
+			}
+		}
+	],
+	"attempts": [
+		{
+			"token": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+			"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+			"intent": "CYBERSOURCE",
+			"idempotency_key": "req_a3380f44-8d2d-43e9-a421-86bb6350b440",
+			"kind": 1,
+			"actions_performed": [
+				{
+					"token": "act_9bb23d6e-b4fb-42f0-a95a-6bc8fb36842b",
+					"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+					"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+					"kind": "PAYER_AUTH_SETUP",
+					"created_at": {
+						"seconds": 1723194368
+					},
+					"updated_at": {
+						"seconds": 1723194368
+					}
+				},
+				{
+					"token": "act_96f7fa64-71a4-4b88-b90d-41a920e9236e",
+					"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+					"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+					"kind": "PAYER_AUTH_ENROLLMENT",
+					"created_at": {
+						"seconds": 1723194378
+					},
+					"updated_at": {
+						"seconds": 1723194378
+					}
+				},
+				{
+					"token": "act_583d506a-2eb5-4e08-b520-c6e554b459af",
+					"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+					"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+					"kind": "PAYER_AUTH_VALIDATION",
+					"created_at": {
+						"seconds": 1723194406
+					},
+					"updated_at": {
+						"seconds": 1723194406
+					}
+				},
+				{
+					"token": "act_e45d2733-1fab-46aa-bf19-49d809634013",
+					"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+					"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+					"kind": "CAPTURE",
+					"created_at": {
+						"seconds": 1723194411
+					},
+					"updated_at": {
+						"seconds": 1723194411
+					}
+				}
+			],
+			"payment_method": {
+				"token": "method_04400e46-608b-44ab-b342-08680902f0c2",
+				"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+				"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+				"last_four": "2654",
+				"kind": "CARD",
+				"scheme": "Visa",
+				"bin": "461758",
+				"expiration_month": "11",
+				"expiration_year": "2025",
+				"created_at": {
+					"seconds": 1723194368
+				},
+				"updated_at": {
+					"seconds": 1723194368
+				}
+			},
+			"billing": {
+				"token": "bill_d4e6ee45-bdcf-4ba2-a924-84306fa85ebc",
+				"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+				"street_1": "Somewhere over there ABC",
+				"city": "Karachi",
+				"postal_code": "75500",
+				"country": "PK",
+				"created_at": {
+					"seconds": 1723194379
+				},
+				"updated_at": {
+					"seconds": 1723194379
+				}
+			},
+			"enrollment": {
+				"token": "enroll_4a28c50d-ed96-4010-ac10-b96a77db2a74",
+				"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+				"cybersource_rid": "7231943777226364904990",
+				"specification_version": "2.2.0",
+				"veres_enrolled": "Y",
+				"eci": "05",
+				"created_at": {
+					"seconds": 1723194379
+				},
+				"updated_at": {
+					"seconds": 1723194379
+				}
+			},
+			"risk": {
+				"token": "risk_4414a21f-f8c0-4d3d-8592-7244beb1fc20",
+				"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+				"score": "12",
+				"factor_codes": ["H"],
+				"info_codes": [
+					"UNV-ADDR",
+					"VEL-CC",
+					"VEL-NAME",
+					"ID-X-POS",
+					"MORPH-C",
+					"MORPH-E",
+					"MORPH-P",
+					"FREE-EM",
+					"MUL-EM",
+					"RISK-SD",
+					"GVEL-R55",
+					"GVEL-R58",
+					"GVEL-R7",
+					"GVEL-R75"
+				],
+				"created_at": {
+					"seconds": 1723194409
+				},
+				"updated_at": {
+					"seconds": 1723194409
+				}
+			},
+			"authorization": {
+				"token": "auth_d63a9547-69f2-4dfc-ac71-068ab2e77c81",
+				"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+				"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+				"intent": "CYBERSOURCE",
+				"cybersource_rid": "7231944062856729104984",
+				"totals": {
+					"currency": "PKR",
+					"amount": 9000
+				},
+				"created_at": {
+					"seconds": 1723194409
+				},
+				"updated_at": {
+					"seconds": 1723194409
+				}
+			},
+			"capture": {
+				"token": "cap_5ade87aa-6e70-422a-8dc7-a25d77956aa6",
+				"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+				"attempt": "attemp_e661b62b-0ba0-4367-8414-9bf5aa0eafb4",
+				"intent": "CYBERSOURCE",
+				"cybersource_rid": "7231944106196418504979",
+				"is_voidable": true,
+				"kind": "CAPTURE",
+				"totals": {
+					"currency": "PKR",
+					"amount": 9000
+				},
+				"created_at": {
+					"seconds": 1723194411
+				},
+				"updated_at": {
+					"seconds": 1723194411
+				}
+			},
+			"is_success": true,
+			"created_at": {
+				"seconds": 1723194368
+			},
+			"updated_at": {
+				"seconds": 1723194368
+			},
+			"mode": "payment",
+			"entry_mode": "raw",
+			"customer": {
+				"token": "guest_381090ca-a49e-4c84-9867-8138664b32d7",
+				"first_name": "Suleman",
+				"last_name": "Shishmahal",
+				"email": "suleman.shishmahal@gmail.com",
+				"phone": "+92 332 8211595"
+			}
+		}
+	],
+	"location": {
+		"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+		"token": "loc_4839390b-2f1e-4a24-a079-eb512ceb21db",
+		"ip_address": "203.130.3.66",
+		"city": "Karachi",
+		"country": "PK",
+		"latitude": 24.883,
+		"longitude": 67.058,
+		"region": "Sindh",
+		"created_at": {
+			"seconds": 1723194410
+		},
+		"updated_at": {
+			"seconds": 1723194410
+		}
+	},
+	"device": {
+		"tracker": "track_e772f8b3-edc7-4a6f-9e85-94d262c03087",
+		"token": "dev_e0d71a0d-8ed3-46b8-8f4f-f14951230953",
+		"user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+		"entity": "browser",
+		"browser": "Chrome",
+		"browser_version": "127.0.0.0",
+		"device_type": "desktop",
+		"platform": "Windows 10",
+		"platform_icon": "https://assets.userstack.com/icon/os/windows10.png",
+		"created_at": {
+			"seconds": 1723194411
+		},
+		"updated_at": {
+			"seconds": 1723194411
+		}
+	},
+	"created_at": {
+		"seconds": 1723194367
+	},
+	"updated_at": {
+		"seconds": 1723194367
+	}
+}
+```

@@ -1,5 +1,18 @@
 {
 	"title": "Documentation",
 	"root": true,
-	"pages": ["index", "test", "!api-reference"]
+	"pages": [
+		"index",
+		"project-timeline",
+		"website-checklist",
+		"---Set up Safepay---",
+		"setup-safepay",
+		"---Business Operations---",
+		"settlement-file",
+		"---More---",
+		"faq",
+		"!payments",
+		"!developers",
+		"!api-reference"
+	]
 }

@@ -1,0 +1,4 @@
+{
+	"title": "Setup Safepay",
+	"pages": ["libraries-sdks", "sandbox-environment", "api-keys", "test-cards", "error-scenarios"]
+}

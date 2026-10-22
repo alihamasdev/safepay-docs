@@ -1,0 +1,4 @@
+{
+	"title": "Modify Payments",
+	"pages": ["capture", "refund", "reversal", "void"]
+}

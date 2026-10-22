@@ -1,0 +1,48 @@
+---
+title: "Raast payer identifiers"
+description: "Use IBAN and Raast ID payer identifiers in Request to Pay."
+---
+
+A payer identifier tells Raast where to deliver a Request to Pay. It is required only for `RTP`; omit the entire `payer` object for `DYNAMIC_QR`.
+
+## Supported identifier kinds
+
+| `identifier_kind` | Value in `identifier`                                         | Example                    |
+| ----------------- | ------------------------------------------------------------- | -------------------------- |
+| `IBAN`            | The payer's IBAN.                                             | `PK36SCBL0000001123456702` |
+| `RAAST_ID`        | An identifier registered with Raast, such as a mobile number. | `03001234567`              |
+
+Send the enum names exactly as shown. The API does not accept numeric enum values.
+
+### IBAN example
+
+```
+{
+  "payer": {
+    "identifier_kind": "IBAN",
+    "identifier": "PK36SCBL0000001123456702"
+  }
+}
+```
+
+### Raast ID example
+
+```
+{
+  "payer": {
+    "identifier_kind": "RAAST_ID",
+    "identifier": "03001234567"
+  }
+}
+```
+
+## Handle identifiers safely
+
+Payer identifiers are sensitive, single-use inputs. Safepay uses the value to initiate RTP and does not persist it with the tracker.
+
+<Callout type="warn">
+Do not store a payer identifier in tracker metadata, analytics events, error messages, or application logs. Do not expect it in subsequent tracker responses.
+
+</Callout>
+
+Validate that a value is present before submitting it, then let Safepay and Raast perform authoritative identifier validation. If the request is rejected, ask the customer to verify the value or choose Dynamic QR.

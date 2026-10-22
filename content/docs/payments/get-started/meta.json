@@ -1,0 +1,4 @@
+{
+	"title": "Get started",
+	"pages": ["integration-checklist", "introduction", "express-checkout", "subscriptions", "advanced-checkout", "raast", "go-live-checklist"]
+}

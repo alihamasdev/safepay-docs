@@ -1,0 +1,19 @@
+{
+	"title": "Core concepts",
+	"pages": [
+		"tracker",
+		"tracker-states",
+		"fetch-tracker",
+		"money",
+		"payment-intents",
+		"payment-modes",
+		"payment-entry-modes",
+		"payment-actions",
+		"shoppers",
+		"chargebacks",
+		"three-d-secure",
+		"raast",
+		"payment-methods",
+		"tokenization"
+	]
+}

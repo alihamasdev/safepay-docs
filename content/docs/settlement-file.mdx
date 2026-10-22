@@ -1,0 +1,71 @@
+---
+title: "Settlement File"
+description: "Understand how to reconcile transactions with our settlement file"
+---
+
+To help you reconcile daily transactions processed through Safepay, we provide a **daily settlement file**. This file includes all the essential transaction data, allowing you to match the records in your system with Safepay’s records.
+
+## File Format
+
+The settlement file will be an **Excel file** containing a structured table with specific details about each transaction. Below is a breakdown of each column in the file and what it represents.
+
+| Column                                 | Description                                                                                                                                               |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Merchant Payment / Settlement Date** | The date when the transaction was settled.                                                                                                                |
+| **Processing Date (YY/MM/DD)**         | The date when the transaction was processed.                                                                                                              |
+| **Batch Number**                       | A unique identifier generated daily by the processing system for a batch of transactions.                                                                 |
+| **Merchant Number**                    | A unique identifier assigned to the merchant involved in the transaction.                                                                                 |
+| **Merchant Name**                      | The name of the merchant involved in the transaction.                                                                                                     |
+| **RRN #**                              | The retrieval reference number provided by the acquirer for each transaction.                                                                             |
+| **Currency Code**                      | ISO 4217 code representing the transaction currency. This will always be **586 PKR** (Pakistani Rupees).                                                  |
+| **Card Number**                        | The card number (partially masked) used in the transaction for security.                                                                                  |
+| **Transaction Date (YY/MM/DD)**        | The date when the transaction took place.                                                                                                                 |
+| **Transaction Time**                   | The exact time at which the transaction occurred.                                                                                                         |
+| **Transaction Type**                   | Indicates the transaction type, either **POS Purchase** or **POS Reversal**.                                                                              |
+| **Debit/Credit**                       | Specifies if the transaction was a **debit (D)** or **credit (C)**.                                                                                       |
+| **Transaction Amount**                 | The total amount of the transaction in PKR, before deductions.                                                                                            |
+| **Discount Fixed Amount**              | The fixed fee charged by Safepay per transaction.                                                                                                         |
+| **Discount % Rate**                    | The percentage rate applied by Safepay per transaction.                                                                                                   |
+| **MDR**                                | Merchant Discount Rate, which is the combined amount of the discount fixed fee and the discount percentage.                                               |
+| **Sales Tax**                          | Sales tax, calculated based on the province where the merchant's business is registered.                                                                  |
+| **SalesTax WHT@2% of Trans_Amount**    | Sales tax, withholding of 2% if you are merchant dealing with goods. This is not applicable to Services merchants.                                        |
+| **IncomeTax WHT@1% of Trans_Amount**   | Income tax of 1% which is applicable to both Goods and Services merchants                                                                                 |
+| **Net Merchant_Payment**               | The total transaction amount after all deductions, including taxes and discounts.                                                                         |
+| **Approval Number**                    | A unique reference number generated by the issuing bank for each transaction. This can be used to locate the transaction with the issuing bank or scheme. |
+| **Card Brand**                         | The brand of the card used, such as Visa or MasterCard.                                                                                                   |
+| **CyberSource Request ID**             | A unique identifier generated by CyberSource to track the transaction.                                                                                    |
+| **Province**                           | The province where the merchant's business is registered, impacting applicable taxes.                                                                     |
+| **Transaction (I/L)**                  | Specifies if the transaction is **Local (LOCAL)** or **International (INTERNATIONAL)**.                                                                   |
+| **Bin Country**                        | The country of the issuing bank, determined based on the Bank Identification Number (BIN).                                                                |
+| **Order ID (Merchant)**                | An internal identifier the merchant associates with the payment, such as an invoice number or basket ID.                                                  |
+| **Tracker ID**                         | A unique identifier generated by Safepay for internal transaction tracking.                                                                               |
+| **Non-PKR Amount**                     | The transaction amount in the original international currency if different from 586 PKR.                                                                  |
+| **Currency Code**                      | The international currency code (e.g., USD, EUR, GBP, AED, SAR, SGD, CAD) if applicable.                                                                  |
+| **Rate Applied**                       | The currency conversion rate applied for settlement in the local currency.                                                                                |
+| **Categories**                         | The Category assigned to the merchant between Goods or Services.                                                                                          |
+
+## How to Use the Settlement File
+
+1.  **Reconciliation Process**:
+
+    - Match transactions in your system with the transactions in the settlement file using key fields such as **Order ID (Merchant)**, **Transaction Amount**, and **Processing Date**.
+    - Validate amounts, dates, and other transaction details to ensure alignment between your records and Safepay’s data.
+
+2.  **Review Deductions**:
+
+    - Use the **Discount Fixed Amount**, **Discount % Rate**, and **MDR** columns to review the fees applied to each transaction.
+    - Confirm the **Net Amount** for each transaction, which is the actual amount settled to your account after all deductions.
+
+3.  **Verify Currency Conversions**:
+
+    - For international transactions, check **Int'l Currency Amount** and **Rate Applied** to verify the conversion applied.
+
+4.  **Tax Compliance**:
+
+    - Refer to the **FED Amount** and **Province** columns for the tax applied based on your registered location.
+
+5.  **Support & Discrepancies**:
+
+    - If you find any discrepancies, contact our support team with relevant details, including **Tracker ID**, **Approval Number**, and **CyberSource Request ID** for efficient tracking.
+
+By following these steps and referencing the columns in the settlement file, you can ensure accurate reconciliation with Safepay’s records.

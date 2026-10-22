@@ -1,0 +1,62 @@
+---
+title: "3D Secure authentication"
+description: "Integrate 3D Secure authentication."
+---
+
+3D Secure 2 is an authentication protocol that provides an additional layer of verification for card-not-present (CNP) transactions. We recommend that you use it to comply with authentication regulations for online payments, and to use liability shift rules.
+
+## Liability shift rules
+
+| Countries/regions | Period                 | Transaction type                                                                              | Liability shift applies? |
+| ----------------- | ---------------------- | --------------------------------------------------------------------------------------------- | ------------------------ |
+| EU                | Before 14 March 2020   | 3D Secure 2 transaction with an issuer that supports 3D Secure 2.                             | Yes                      |
+|                   | After 14 March 2020    | 3D Secure 2 transaction regardless of whether the issuer supports 3D Secure 2.                | Yes                      |
+| Brazil            | From 15 August 2019    | 3D Secure 2 transaction.                                                                      | Yes                      |
+| Canada, LATAM     | Before 15 August 2019  | 3D Secure 2 transaction.                                                                      | No                       |
+|                   | After 15 August 2019   | 3D Secure 2 transaction successfully completed through either frictionless or challenge flow. | Yes                      |
+| APAC, MEA         | Before 18 April 2020   | 3D Secure 2 transaction with an issuer that supports 3D Secure 2.                             | Yes                      |
+|                   | After 18 April 2020    | 3D Secure 2 transaction regardless of whether the issuer supports 3D Secure 2.                | Yes                      |
+| US                | Before 31 August 2020  | 3D Secure 2 transaction with an issuer that supports 3D Secure 2.                             | Yes                      |
+|                   | After 31 August 2020   | 3D Secure 2 transaction regardless of whether the issuer supports 3D Secure 2.                | Yes                      |
+| Global            | Before 17 October 2021 | 3D Secure 1 transaction                                                                       | Yes                      |
+|                   | After 17 October 2021  | 3D Secure 1 transaction                                                                       | No                       |
+
+## 3D Secure 2 authentication flows
+
+There are two main types of Payer Authentication flows under 3DS 2
+
+**Frictionless**: The card issuer performs the authentication seamlessly within your website or mobile app without requiring additional input from the shopper. This flow leverages data such as transaction history, device information, and behavioral analysis to authenticate the payer passively.
+
+**Challenge**: Shoppers are redirected to the card issuer's site to provide additional authentication data, such as a password or an SMS verification code. This flow can lead to lower conversion rates due to technical errors during the redirection or shoppers dropping out of the authentication process.
+
+A transaction that qualifies for 3D Secure 2 can go through either a frictionless flow or a challenge flow, depending on the issuer's requirements.
+
+### Frictionless flow
+
+In a frictionless flow, the acquirer, issuer, and card scheme exchange all necessary information in the background through passive authentication using the shopper's device fingerprint. The transaction is completed without further shopper interaction.
+
+Frictionless 3DS flow
+
+### Challenge flow
+
+In a challenge flow, the issuer requires additional shopper interaction, either through biometrics, two-factor authentication, or similar methods such as one-time passcodes sent through SMS.
+
+Challenge 3DS flow
+
+## Understanding ECI Values
+
+ECI stands for Electronic Commerce Indicator. It is a value used in card-not-present transactions (such as online payments) to indicate the level of security used during the authentication process. The ECI value helps determine whether the liability for fraudulent transactions lies with the merchant or the card issuer. Different card networks (Visa, MasterCard, and Amex) use specific ECI values to signify the outcome of the 3D Secure authentication process and whether a liability shift applies.
+
+## ECI Values and Liability Shift
+
+| Card Network | ECI Value | Description                           | Liability Shift |
+| ------------ | --------- | ------------------------------------- | --------------- |
+| Visa         | 05        | 3DS Authentication Successful         | Yes             |
+|              | 06        | Merchant Attempted 3DS Authentication | Yes             |
+|              | 07        | 3DS Authentication Not Attempted      | No              |
+| MasterCard   | 02        | 3DS Authentication Successful         | Yes             |
+|              | 01        | Merchant Attempted 3DS Authentication | Yes             |
+|              | 00        | 3DS Authentication Not Attempted      | No              |
+| Amex         | 05        | 3DS Authentication Successful         | Yes             |
+|              | 06        | Merchant Attempted 3DS Authentication | Yes             |
+|              | 07        | 3DS Authentication Not Attempted      | No              |

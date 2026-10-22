@@ -1,0 +1,71 @@
+---
+title: "Integration checklist"
+description: "Checklist for building an online payments integration with Safepay."
+---
+
+Follow the checklist below to ensure you have a complete online payments integration with Safepay.
+
+Before you begin integrating Safepay, make sure you've gone through the following steps:
+
+1
+
+## Sandbox Account Setup
+
+- You’ve created a **Sandbox Account** via the [Dashboard](https://sandbox.api.getsafepay.com/dashboard/login).
+- You've retrieved your **Client-side and Server-side API keys**.
+
+2
+
+## Understand the Integration
+
+- You’ve **chosen your integration flow**: [Express Checkout Guide](/docs/payments/get-started/express-checkout)
+  - [Atoms Web](/docs/payments/get-started/advanced-checkout/safepay-atoms)
+  - [React Native Integration](/docs/payments/get-started/advanced-checkout/safepay-react)
+  - [Cardinal Mobile SDK](/docs/payments/get-started/advanced-checkout/cardinal)
+  - [Plugins](/docs/no-code/overview)
+- You’ve **read the documentation** for your chosen flow.
+- You understand **core concepts**:
+  - [Tracker](/docs/payments/concepts/tracker)
+  - [Tracker states](/docs/payments/concepts/tracker-states)
+  - [Payment intents](/docs/payments/concepts/payment-intents)
+  - [Payment modes](/docs/payments/concepts/payment-modes)
+  - [Payment entry modes](/docs/payments/concepts/payment-entry-modes)
+  - [Payment actions](/docs/payments/concepts/payment-actions)
+  - [Safepay Shoppers](/docs/payments/concepts/shoppers)
+  - [Merchant Shoppers](/docs/payments/concepts/shoppers)
+  - [Tokenization](/docs/payments/concepts/tokenization/introduction)
+  - [Webhooks](/docs/developers/webhooks/overview)
+  - [3D Secure](/docs/payments/concepts/three-d-secure)
+
+3
+
+### Security & Authentication
+
+- You understand how **JWTs are used** for secure communication.
+- You’ve configured **webhooks** to receive transaction updates.
+- You’re validating webhooks and **verifying JWTs** server-side.
+
+4
+
+### Test Environment
+
+- You’ve successfully tested:
+- Creating a Tracker
+- Creating a Customer
+- Creating a JWT/Time based token
+- 3DS challenge flows
+- Handling declined transactions
+- You’ve handled all possible error responses.
+- Your frontend handles **success**, **failure**, and **cancellation** states.
+
+5
+
+### Pre-Go-Live
+
+- You’ve completed the [KYC onboarding form](https://getsafepay.com/onboarding/login).
+- All production API keys and webhook endpoints are updated in your code.
+
+<Callout type="info">
+Make sure you monitor webhooks in real-time during testing and production to avoid missing charge updates.
+
+</Callout>

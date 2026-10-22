@@ -1,0 +1,111 @@
+---
+title: "Capture"
+description: "Complete an authorised payment."
+---
+
+For payment methods that support separate capture, the payment is completed in two steps:
+
+1.  Authorization: The payment details of the shopper are verified with the issuer, and the funds are reserved.
+2.  Capture: The reserved funds are transferred from the shopper to your account.
+
+By default, payments are captured automatically without a delay, immediately after authorization.
+
+For payment methods that support separate authorization and capture, you can capture the payment later, for example after the goods have been shipped. This lets you [reverse](/docs/payments/modify-payments/reversal) the payment in case of any issues with the shipment.
+
+<Callout type="warn">
+To learn if a payment method supports separate captures, see our [Build your integration overview](/docs/payments/get-started/introduction#supported-use-cases).
+
+</Callout>
+
+To capture payments, you can use:
+
+- [Automatic capture](/docs/payments/modify-payments/capture#automatic-capture): payments are captured immediately after authorization. This is the default setting.
+- [Manual capture](/docs/payments/modify-payments/capture#manual-capture): you capture each payment by making a request to the [`/order/payments/v3/{tracker}`](https://apidocs.getsafepay.com/#ea313d8e-d0c2-41f3-9c57-aefa9a0563e9) endpoint.
+
+## Automatic capture
+
+With automatic capture, payments are captured automatically. By default, this happens immediately after authorization.
+
+## Manual capture
+
+To use manual capture you need to send a capture request for each payment.
+
+In your payment request, you can add a parameter to enable manual capture for that transaction. After the payment is authorised, the amount is not captured until you send a manual capture request.
+
+To set the capture method for an individual payment to manual, include the following in the [`authorization`](https://apidocs.getsafepay.com/#6145b078-c3e7-4621-88de-373187bf6147) request.
+
+| Field                 | Type    | Required | Description                                                                                          |
+| --------------------- | ------- | -------- | ---------------------------------------------------------------------------------------------------- |
+| `do_capture`          | boolean | `Y`      | If `false`, this will only authorize the payment allowing you to manually capture when you're ready. |
+| `use_action_chaining` | boolean | `N`      | If `false`, this will pause the flow in an authorized state.                                         |
+
+For example, during the payment process, depending on how you have [setup your tracker](/docs/payments/concepts/tracker), you will have to authorize the payment. To enable manual capture for a card payment:
+
+```javascript title="Enabling manual capture in a /payments request"
+const Safepay = require("@sfpy/node-core")({
+	api_key: "SAFEPAY_PRIVATE_KEY",
+});
+
+const authorization_request = {
+	use_action_chaining: false,
+	payload: {
+		authorization: {
+			do_capture: false,
+		},
+	},
+};
+
+try {
+	// fetch the original payment from your database
+	// Replace this with your own logic to fetch the
+	// tracker you have previously created.
+	const tracker = await fetchPaymentFromDatabase();
+
+	const response = Safepay.order.payments.authorize(tracker.token, authorization_request);
+} catch (err) {
+	console.log(err);
+	throw err;
+}
+```
+
+After a payment is authorised, you must capture it.
+
+### Capture a payment
+
+To manually capture a payment:
+
+1
+
+From the payment response or the AUTHORIZATION webhook, get the `tracker` of the authorization you want to capture.
+
+2
+
+Make a `POST` request to the [`/order/payments/v3/{tracker}`](https://apidocs.getsafepay.com/#ea313d8e-d0c2-41f3-9c57-aefa9a0563e9) endpoint, where `tracker` is the tracker ID of the authorization you want to capture.
+
+This request accepts an empty body i.e if you're not using one of our SDKs, then you must pass in an empty JSON body like so `{}`
+
+The following example shows how to capture a payment authorization that has the tracker `track_1a46dc70-91f9-4892-8e25-0bb5205b69c7`.
+
+```bash title="Capture a payment request"
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/track_1a46dc70-91f9-4892-8e25-0bb5205b69c7' \
+  -H 'x-sfpy-api-key: YOUR_SECRET_KEY' \
+  -H 'content-type: application/json' \
+  --data '{}'
+```
+
+3
+
+In the capture response, note the following:
+
+- `next_actions`: The next action for a captured payment should be `NOOP`
+- `state`: The state for the payment should be `TRACKER_ENDED`
+
+If you do not receive any errors during your API call, your payment should be captured and you will receive a webhook event with type `payment.succeeded`
+
+## Webhooks
+
+When we have processed your capture request, we will send you a webhook event if you have an active webhooks subscription.
+
+In some cases capturing a payment can fail in which case we will send you a webhook event with error details.
+
+For details please refer to the [Webhooks documentation](/docs/developers/webhooks/overview).

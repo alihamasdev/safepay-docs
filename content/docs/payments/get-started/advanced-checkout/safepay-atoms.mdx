@@ -1,0 +1,41 @@
+---
+title: "Safepay Atoms Overview"
+description: "Decide your integration flow."
+---
+
+```html
+
+```
+
+6
+
+## Completing Payer Authentication
+
+Based on whether your customer was able to successfully complete the challenge or not, the `PayerAuthentication` Atom will invoke the appropriate callback.
+
+If there were any errors:
+
+- Show your customer the error message passed in the arguments
+- Close the modal
+- Direct your customer to try again using a different payment method or card
+
+If payer authentication was successful:
+
+- Close the modal
+- Fetch the tracker using the Reporter API to verify the status
+- Redirect your customer to the order confirmation page
+
+Depending on the options you passed into the PayerAuthentication atom, the tracker will either be in state `TRACKER_AUTHORIZED` or `TRACKER_ENDED`. You can optionally verify the status of the tracker using the Reporter API.
+
+```javascript title="Fetch a tracker to get the status in NodeJS"
+const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+try {
+	const response = safepay.reporter.payments.fetch(trackerToken);
+} catch (err) {
+	console.log(error);
+}
+```

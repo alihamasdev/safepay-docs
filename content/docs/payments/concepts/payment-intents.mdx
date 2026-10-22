@@ -1,0 +1,13 @@
+---
+title: "Payment intents"
+description: ""
+---
+
+The `intent` specifies the payment integration which will be used to pay a [`tracker`](/docs/payments/concepts/tracker). Note that this can be changed dynamically when a customer wishes to pay using an alternative payment method. Supported values are:
+
+- `CYBERSOURCE` for card payments with Visa or Mastercard branded cards.
+- `RAAST` for PKR payments made through Raast using Dynamic QR or Request to Pay.
+
+The available intents are also returned in the tracker setup response's `capabilities` object. Do not offer an intent when its capability is `false`.
+
+Changing an intent does not create a payment by itself. It updates the tracker and its next action. For Raast-specific switching rules, see the [Raast payment journey](/docs/developers/payment-journeys/raast).

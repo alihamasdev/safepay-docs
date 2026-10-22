@@ -1,0 +1,86 @@
+---
+title: "Reversal"
+description: "Reverse the authorisation on a payment that has not yet been captured."
+---
+
+For payment methods that support reversals, you may use the [Reverse API](https://apidocs.getsafepay.com/#e55809d4-b8c6-4639-a3ab-527ffaa795aa).
+
+Reversals are useful if you opt to perform [manual captures](/docs/payments/modify-payments/capture) but require the ability to cancel authorizations for any reason. You may also use reversals if it is within 24 hours of the payment.
+
+<Callout type="info">
+To perform a reversal, you must pass the token for the authorization in question.
+
+</Callout>
+
+There are two ways to fetch a authorization token
+
+1
+
+You will find this in the tracker details page on your merchant dashboard.
+
+2
+
+Use the reporting API to fetch details for a payment using the tracker token.
+
+```javascript title="Payment in NodeJS"
+const safepay = require("@sfpy/node-core")({
+	api_key: "YOUR_SERVER_API_KEY",
+	authType: "jwt",
+	host: "https://sandbox.api.getsafepay.com",
+});
+
+(async () => {
+	try {
+		const response = await safepay.order.payments.reverse({
+			tracker: "track_9d765b77-608f-46bc-84d2-5f4392753ca3",
+			payload: {
+				authorization: "auth_621f9b56-9dba-46b6-92e3-3cd13516c6a5",
+			},
+		});
+		console.log(response);
+	} catch (err) {
+		console.error(err);
+	}
+})();
+```
+
+```json title="Sample Response"
+{
+	"data": {
+		"tracker": {
+			"token": "track_9d765b77-608f-46bc-84d2-5f4392753ca3",
+			"client": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+			"environment": "sandbox",
+			"state": "TRACKER_REVERSED",
+			"intent": "CYBERSOURCE",
+			"mode": "instrument",
+			"next_actions": {
+				"CYBERSOURCE": {
+					"kind": "NOOP",
+					"request_id": "req_55e5ef0a-9081-498b-80b2-ce65f5f0efda"
+				}
+			},
+			"purchase_totals": {
+				"quote_amount": {
+					"currency": "PKR",
+					"amount": 100
+				},
+				"base_amount": {
+					"currency": "PKR",
+					"amount": 100
+				},
+				"conversion_rate": {
+					"base_currency": "PKR",
+					"quote_currency": "PKR",
+					"rate": 1
+				}
+			}
+		},
+		"action": {}
+	},
+	"status": {
+		"errors": [],
+		"message": "success"
+	}
+}
+```

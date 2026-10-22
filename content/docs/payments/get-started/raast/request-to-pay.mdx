@@ -1,0 +1,178 @@
+---
+title: "Request to Pay"
+description: "Send a Raast Request to Pay to a payer's IBAN or Raast ID."
+---
+
+Request to Pay sends a payment request to a customer using an IBAN or Raast ID. The customer reviews and approves the request in their banking app.
+
+Before continuing, [create a Raast tracker](/docs/payments/get-started/raast/overview#create-a-raast-tracker) and confirm that `capabilities.RAAST` is `true`.
+
+1
+
+## Collect a payer identifier
+
+The `payer` object is required for RTP:
+
+| Field             | Required | Description                              |
+| ----------------- | -------- | ---------------------------------------- |
+| `identifier_kind` | Yes      | `IBAN` or `RAAST_ID`.                    |
+| `identifier`      | Yes      | The payer's IBAN or registered Raast ID. |
+
+See [Payer identifiers](/docs/payments/concepts/raast/payer-identifiers) for handling guidance and examples.
+
+2
+
+## Initiate the request
+
+Send `RTP` in `payload.raast.kind` together with the payer. `expiry_in_minutes` is optional, defaults to 15 minutes, and accepts values from 1 to 180.
+
+```javascript title="Initiate Request to Pay in NodeJS (axios)"
+const axios = require("axios");
+
+async function initiateRtp(trackerToken, checkoutToken, payer) {
+	const response = await axios.post(
+		`https://sandbox.api.getsafepay.com/order/payments/v3/${trackerToken}`,
+		{
+			payload: {
+				raast: {
+					kind: "RTP",
+					payer: {
+						identifier_kind: payer.identifier_kind, // 'IBAN' or 'RAAST_ID'
+						identifier: payer.identifier,
+					},
+					expiry_in_minutes: 15,
+				},
+			},
+		},
+		{
+			headers: {
+				Authorization: `Bearer ${checkoutToken}`, // YOUR_CHECKOUT_TOKEN
+				"Content-Type": "application/json",
+			},
+		},
+	);
+	return response.data;
+}
+
+// Example:
+// initiateRtp('track_550e8400-e29b-41d4-a716-446655440000', 'YOUR_CHECKOUT_TOKEN', {
+//   identifier_kind: 'IBAN',
+//   identifier: 'PK36SCBL0000001123456702'
+// });
+```
+
+3
+
+## Handle the response
+
+```json title="Request to Pay response"
+{
+	"data": {
+		"tracker": {
+			"token": "track_550e8400-e29b-41d4-a716-446655440000",
+			"state": "TRACKER_STARTED",
+			"payment_method_kind": "wallet",
+			"intent": "RAAST",
+			"mode": "payment",
+			"entry_mode": "raw",
+			"next_actions": {
+				"RAAST": {
+					"kind": "NOOP",
+					"request_id": "req_7b7b964f-6917-44e5-a06e-d7e92471e536"
+				}
+			},
+			"raast_payment": {
+				"kind": "RTP",
+				"request_id": "7b7b964f-6917-44e5-a06e-d7e92471e536",
+				"payment_id": "pm_96bc0ef4-7857-47fb-a345-c411a23aeb92",
+				"status": "INITIATED",
+				"expires_at": { "seconds": 1786094100 }
+			}
+		}
+	},
+	"status": { "errors": [], "message": "success" }
+}
+```
+
+`INITIATED` confirms that Safepay created the request, not that the customer paid it. Save `expires_at` and poll the tracker status for the outcome.
+
+<Callout type="warn">
+Once Safepay accepts the RTP initiation, the checkout must not switch to Dynamic QR, cards, or another payment intent — disable those controls and keep polling. This lock lasts until the RTP reaches a terminal outcome; see [switching back after a failed RTP](/docs/payments/get-started/raast/request-to-pay#switch-back-after-a-failed-rtp) below for what happens next.
+
+</Callout>
+
+4
+
+## Switch from Dynamic QR
+
+If the customer already has an initiated Dynamic QR and chooses RTP instead, send the same request as above with `"action": "CREATE_RAAST_PAYMENT"` at the request root. The action override is required because `next_actions.RAAST.kind` is already `NOOP` for the existing Dynamic QR — without it, the request is rejected as having no action to perform.
+
+```javascript title="Switch from Dynamic QR to RTP in NodeJS (axios)"
+const axios = require("axios");
+
+async function switchFromDynamicQrToRtp(trackerToken, checkoutToken, payer) {
+	const response = await axios.post(
+		`https://sandbox.api.getsafepay.com/order/payments/v3/${trackerToken}`,
+		{
+			action: "CREATE_RAAST_PAYMENT",
+			payload: {
+				raast: {
+					kind: "RTP",
+					payer: {
+						identifier_kind: payer.identifier_kind,
+						identifier: payer.identifier,
+					},
+					expiry_in_minutes: 15,
+				},
+			},
+		},
+		{
+			headers: {
+				Authorization: `Bearer ${checkoutToken}`, // YOUR_CHECKOUT_TOKEN
+				"Content-Type": "application/json",
+			},
+		},
+	);
+	return response.data;
+}
+
+// Example:
+// switchFromDynamicQrToRtp('track_550e8400-e29b-41d4-a716-446655440000', 'YOUR_CHECKOUT_TOKEN', {
+//   identifier_kind: 'IBAN',
+//   identifier: 'PK36SCBL0000001123456702'
+// });
+```
+
+`intent`, `mode`, and `entry_mode` stay `RAAST`, `payment`, and `raw` — only `payload.raast.kind` changes. This is only allowed while the Dynamic QR is still `INITIATED`; once Safepay accepts an RTP initiation, no further switching is allowed for that attempt.
+
+<Callout type="warn">
+Switching does not cancel the previous Dynamic QR. See [Dynamic QR](/docs/payments/get-started/raast/dynamic-qr#build-the-checkout-state) — it remains payable until its own expiry, so remove it from your UI as soon as the switch request succeeds.
+
+</Callout>
+
+5
+
+## Poll for completion
+
+Poll `GET /order/payments/v3/{tracker}/status`, which now returns `raast_payment` alongside the tracker. Read both fields — they answer different questions:
+
+- `data.tracker.state`: `TRACKER_STARTED` means the checkout is still open; `TRACKER_ENDED` means the payment was captured — show success.
+- `data.raast_payment.status`: the current RTP's own outcome. `CANCELLED`, `REJECTED`, or `FAILED` means this attempt didn't go through — but note that `tracker.state` stays `TRACKER_STARTED` when this happens (see [Raast payment statuses](/docs/payments/concepts/raast/payment-statuses) for why). Check this field to detect it; do not wait for `tracker.state` to change.
+
+Stop polling once `tracker.state` is `TRACKER_ENDED`, `raast_payment.status` reaches one of the three failure values above, or the saved expiry is reached.
+
+6
+
+## Switch back after a failed RTP
+
+Once `raast_payment.status` is `CANCELLED`, `REJECTED`, or `FAILED`, the lock from initiation lifts. The customer can:
+
+- **Retry RTP** — send the same request as [Initiate the request](/docs/payments/get-started/raast/request-to-pay#initiate-the-request) again (with a new or corrected payer identifier). This always creates a genuinely new request to Raast; nothing is reused.
+- **Switch back to Dynamic QR** — send a `DYNAMIC_QR` request as described in [Dynamic QR](/docs/payments/get-started/raast/dynamic-qr), with `"action": "CREATE_RAAST_PAYMENT"` at the request root (required for the same reason as switching the other direction — `next_actions.RAAST.kind` is `NOOP`). If the original QR from earlier in this checkout hasn't expired yet, Safepay reattaches it rather than generating a new one — the response is identical to the original `dynamic-qr` response, including the same `qr_code`. If it has expired, a fresh QR is generated instead.
+
+Both requests fail with a rejection if sent while the RTP is still `INITIATED` — wait for a terminal `raast_payment.status` first.
+
+<Callout type="info">
+Payer identifiers are transient inputs. Safepay does not return them in the tracker. Do not place them in metadata or application logs.
+
+</Callout>

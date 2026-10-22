@@ -1,0 +1,15 @@
+{
+	"title": "Developers",
+	"root": true,
+	"pages": [
+		"overview",
+		"---Setup Safepay---",
+		"...safepay",
+		"---Payment journeys---",
+		"...payment-journeys",
+		"---Tokenization---",
+		"...tokenization",
+		"---Webhooks---",
+		"...webhooks"
+	]
+}

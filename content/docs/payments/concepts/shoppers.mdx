@@ -1,0 +1,44 @@
+---
+title: "Shoppers"
+description: "Understand the key differences between merchant customers and Safepay users"
+---
+
+## Types of shoppers
+
+In Safepay, there are two types of shoppers: those with a Safepay account and those with a merchant account. Understanding the differences between these two types of shoppers is crucial for managing user experiences and payment processes effectively.
+
+## Shoppers with a Safepay Account
+
+Shoppers with a Safepay account are managed by Safepay. These users benefit from the ability to tokenize their payment method details, allowing for faster checkouts across all merchants that use Safepay. Here's how it works:
+
+- A shopper creates a Safepay account and saves their payment methods with a merchant.
+- The saved payment methods are securely tokenized by Safepay.
+- When the shopper visits a different merchant that uses Safepay, they can log in with the same Safepay credentials.
+- The shopper can complete their purchase using the saved payment method details, ensuring a seamless and quick checkout experience.
+
+This cross-merchant functionality enhances convenience for shoppers, making it easier for them to make purchases without re-entering payment details.
+
+## Shoppers with a Merchant Account
+
+Shoppers with a merchant account, known as `customers`, are managed by the merchant themselves. While these customers can also tokenize their payment methods, the tokens are restricted to the merchant that issued them. Key points include:
+
+- Customers create accounts directly with the merchant.
+- Payment methods are tokenized, but the tokens cannot be used across different merchants.
+- Merchants are responsible for handling `customer` lifecycle events, such as account creation, updates, and deletions.
+- Merchants also manage payment method lifecycle events, ensuring that payment details are up-to-date and secure.
+
+This approach gives merchants greater control over their customer data and interactions but requires additional management of customer and payment method lifecycles.
+
+## Key Differences
+
+| Feature                   | Shoppers with Safepay Account              | Shoppers with Merchant Account |
+| ------------------------- | ------------------------------------------ | ------------------------------ |
+| Managed by                | Safepay                                    | Merchant                       |
+| Tokenization              | Yes                                        | Yes                            |
+| Cross-Merchant Token Use  | Yes                                        | No                             |
+| Account Creation          | With Safepay                               | With Merchant                  |
+| Payment Method Management | Safepay                                    | Merchant                       |
+| Lifecycle Event Handling  | Managed by Safepay                         | Managed by Merchant            |
+| Checkout Speed            | Faster due to token reuse across merchants | Merchant-specific tokens only  |
+
+Understanding these two types of shoppers helps in designing better integration and user experiences within the Safepay ecosystem.

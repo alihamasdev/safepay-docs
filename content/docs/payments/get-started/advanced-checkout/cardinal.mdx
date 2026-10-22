@@ -1,0 +1,367 @@
+---
+title: "Payer Authentication with Cardinal guide"
+description: "Accept payments using the Cardinal flow."
+---
+
+4
+
+## Payer Authentication Setup
+
+After creating the payment session and the client side token, the next step is to pass in the customer payment details to the Order API.
+
+<Callout type="warn">
+**Important**: If you pass in raw card details from your server, Safepay will require you to submit a PCI DSS Attestation of Compliance (AOC). If you don’t have a PCI DSS AOC, you must submit your customer’s card information directly from your website to our APIs. We strongly recommend you sending the customer’s card information through your client website.
+
+</Callout>
+
+```javascript title="Initiate Payer Authentication in NodeJS"
+const safepay = require("@sfpy/node-core")("YOUR_SECRET_KEY", {
+	authType: "secret",
+	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+});
+
+(async () => {
+	try {
+		const response = await safepay.order.tracker.action({
+			payload: {
+				is_mobile: true,
+				payment_method: {
+					card: {
+						card_number: "5200000000001096",
+						expiration_month: "12",
+						expiration_year: "2028",
+						cvv: "123",
+					},
+				},
+			},
+		});
+		console.log(response);
+	} catch (err) {
+		console.error(err);
+	}
+})();
+```
+
+<Callout type="info">
+Note: You must pass `"is_mobile": true` for mobile-based flows. This is requirement to generate the ServerJWT.
+
+</Callout>
+
+The response from this step includes the card details and a `payer_authentication_setup` object containing the `access_token` and `CardinalJwt`. These are used for collecting device data and completing the enrollment step with the card issuer.
+
+```json title="Response"
+{
+	"action": {
+		"token": "req_29ffd60c-0527-4173-920b-968175deac28",
+		"payer_authentication_setup": {
+			"cardinal_jwt": "eyJhbGciOiJIUzI1NiIsInR5..."
+		}
+	}
+}
+```
+
+5
+
+## Initialize Cardinal SDK
+
+[Cardinal Mobile SDK Guide](https://developer.cardinaltrusted.com/docs/overview-of-mobile-sdk) provides a component to manage device data collection and challenge flow for your customers.
+
+```text
+# Install the Cardinal SDK
+curl -L -u : https://cardinalcommerceprod.jfrog.io/artifactory/ios/-/cardinalmobilesdk.zip -o
+# Example
+curl -L -u UserName:ApiKey "https://cardinalcommerceprod.jfrog.io/artifactory/ios/2.2.5-6/cardinalmobilesdk.zip" -o cardinalmobilesdk.zip
+```
+
+## Configure Cardinal Mobile SDK
+
+Create a new instance of the Cardinal object by [CardinalService new]. SDK offers multiple configuration options for you (if not specified, everything is set to default). For more details: CardinalConfigurationOptions. Use the code snippet below for completing the configuration.
+
+```javascript title="Example"
+#import
+CardinalSession *session;
+//Setup can be called in viewDidLoad
+- (void)setupCardinalSession {
+	session = [CardinalSession new];
+	CardinalSessionConfiguration *config = [CardinalSessionConfiguration new];
+	config.deploymentEnvironment = CardinalSessionEnvironmentProduction;
+	config.requestTimeout = CardinalSessionTimeoutStandard;
+	config.challengeTimeout = 5;
+	config.uiType = CardinalSessionUITypeBoth;
+	UiCustomization *yourCustomUi = [[UiCustomization alloc] init];
+	//Set various customizations here. See "iOS UI Customization" documentation for detail.
+	config.uiCustomization = yourCustomUi;
+	UiCustomization *yourDarkModeCustomUi = [[UiCustomization alloc] init];
+	config.darkModeUiCustomization = yourDarkModeCustomUi;
+	CardinalSessionRenderTypeArray *renderType = [[CardinalSessionRenderTypeArray alloc] initWithObjects:
+    	                       	CardinalSessionRenderTypeOTP,
+        	                   	CardinalSessionRenderTypeHTML,
+								CardinalSessionRenderTypeOOB,
+								CardinalSessionRenderTypeSingleSelect,
+								CardinalSessionRenderTypeMultiSelect,
+            	               nil];
+	config.renderType = renderType;
+	[session configure:config];
+}
+```
+
+### Available Configurations for iOS
+
+This table outlines configuration options available in the Cardinal SDK:
+
+### Available Configuration Options for Cardinal SDK (iOS)
+
+| Method                    | Description                                                                                                                                                                                                                                                                         | Default Value(s)                       | Possible Value(s)                                                                                                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deploymentEnvironment`   | The environment SDK connects to.                                                                                                                                                                                                                                                    | `CardinalSessionEnvironmentProduction` | `CardinalSessionEnvironmentProduction`, `CardinalSessionEnvironmentStaging`                                                                                                      |
+| `uiType`                  | Interface types the device supports for displaying challenge UIs. Interacts with `renderType`. `<br />`It is recommended to use `CardinalSessionUITypeBoth` to support both Native and HTML types. Deviating may impact performance.                                                | `CardinalSessionUITypeBoth`            | `CardinalSessionUITypeBoth`, `CardinalSessionUITypeNative`, `CardinalSessionUITypeHTML`                                                                                          |
+| `renderType`              | List of render types supported by the device. `<br />`**Note:** `<br />`• If `uiType` is `CardinalSessionUITypeBOTH` or `CardinalSessionUITypeHTML`, include **all** render types. `<br />`• If `uiType` is `CardinalSessionUITypeNative`, exclude `CardinalSessionRenderTypeHTML`. | All listed types                       | `CardinalSessionRenderTypeOTP`, `CardinalSessionRenderTypeHTML`, `CardinalSessionRenderTypeOOB`, `CardinalSessionRenderTypeSingleSelect`, `CardinalSessionRenderTypeMultiSelect` |
+| `proxyServerURL`          | Proxy server through which the Cardinal SDK session operates.                                                                                                                                                                                                                       | `null`                                 | String value                                                                                                                                                                     |
+| `requestTimeout`          | Maximum amount of time (in milliseconds) for all exchanges.                                                                                                                                                                                                                         | `8000`                                 | Integer (≥ 0 ms)                                                                                                                                                                 |
+| `challengeTimeout`        | Timeout for the challenge screen (in minutes).                                                                                                                                                                                                                                      | `5`                                    | Integer (≥ 5 minutes)                                                                                                                                                            |
+| `uiCustomization`         | Sets custom UI customization for SDK-controlled challenge UI.                                                                                                                                                                                                                       | –                                      | Custom object                                                                                                                                                                    |
+| `enableDFSync`            | Enable Device Fingerprint sync to call `onSetupCompleted` after data collection.                                                                                                                                                                                                    | `true`                                 | `true`, `false`                                                                                                                                                                  |
+| `threeDSRequestorAppURL`  | Merchant app URL to be used within the CReq message. Allows return to the merchant app after OOB flow.                                                                                                                                                                              | –                                      | String value                                                                                                                                                                     |
+| `collectLogs`             | Enables collection of SDK logs.                                                                                                                                                                                                                                                     | `true`                                 | `true`, `false`                                                                                                                                                                  |
+| `darkModeUiCustomization` | Set custom UI for SDK-controlled **dark mode** challenge UI.                                                                                                                                                                                                                        | –                                      | Custom object                                                                                                                                                                    |
+| `setDatacenter()`         | Configure which data center the SDK will route to.                                                                                                                                                                                                                                  | `CardinalDatacenter.VISA`              | `CardinalDatacenter.CARDINAL`, `CardinalDatacenter.VISA`                                                                                                                         |
+
+6
+
+## Initialize Call to Cardinal
+
+<Callout type="info">
+Use the CardinalJWT received in the Payer Authentication Setup Step
+
+</Callout>
+
+Calling CardinalService.initialize() will begin the communication process to ensure user experience is seamless, by authenticating your credentials (serverJwt) and completing the data collection process. By the time they are ready to checkout, all necessary pre-processing will be completed. Use the code snippet below for completing the Cardinal.init(). va Code Snippet
+
+```text title="Call Cardinal.init in Obecjtive C"
+NSString *jwtString = @"INSERT_YOUR_JWT_HERE";
+
+[session setupWithJWT:jwtString
+didComplete:^(NSString * _Nonnull consumerSessionId){
+//
+// You may have your Submit button disabled on page load. Once you are setup
+// for CCA, you may then enable it. This will prevent users from submitting
+// their order before CCA is ready.
+//
+} didValidate:^(CardinalResponse * _Nonnull validateResponse) {
+// Handle failed setup
+// If there was an error with setup, cardinal will call this function with
+// validate response and empty serverJWT
+}];
+```
+
+From the Cardinal SDK response, extract the `consumerSessionId` to pass into the Payer Authentication Enrollment step.
+
+7
+
+## Payer Auth Enrollment
+
+Please see below on how to use the `consumerSessionId`
+
+```javascript title="Check Enrollment in NodeJS"
+const safepay = require("@sfpy/node-core")("CLIENT_SIDE_AUTH_TOKEN", {
+	authType: "jwt",
+	host: "https://sandbox.api.getsafepay.com",
+});
+
+try {
+	const response = await safepay.order.tracker.action({
+		tracker: "track_b65ba6ae-2b11-4606-920b-24d70a2de5c2",
+		payload: {
+			billing: {
+				street_1: "St 1",
+				street_2: "",
+				city: "Islamabad",
+				state: "",
+				postal_code: "44000",
+				country: "PK",
+			},
+			authorization: {
+				do_capture: true,
+				do_card_on_file: false,
+			},
+			authentication_setup: {
+				sdk_reference_id: "",
+			},
+		},
+	});
+
+	console.log(response);
+} catch (error) {
+	console.error(error);
+}
+```
+
+<Callout type="info">
+Note the example above shows a combined authorization and capture without saving the card.
+
+</Callout>
+
+```json title="Payer Enrollment Response"
+{
+	"action": {
+		"token": "req_29ffd60c-0527-4173-920b-968175deac28",
+		"payer_authentication_enrollment": {
+			"access_token": "eyJ...",
+			"authentication_transaction_id": "BaQGS1iS5DqhxSPWukG0",
+			"payload": "eyJtZXNzYWdlVHlwZSI6IkNSZXEi..."
+		}
+	}
+}
+```
+
+8
+
+Create Lookup Response
+
+Create an API call to your backend server in order to send a Lookup Request (cmpi_lookup) to Cardinal's platform for initiating the Consumer Authentication transaction. The Centinel platform manages all of the routing and connectivity, as well as the rules engine for all of the various 3-D Secure protocols and versions. Please follow the Getting Started and Lookup Request/Response sections for completing your backend integration:
+
+## Handle the Lookup Response and create the Authentication Session
+
+After the completion of the cmpi_lookup request, check the CMPI_Lookup_Response for the following fields:
+
+- ThreeDSVersion = 2.X ( 2.0, 2.1, etc)
+- Enrolled = Y
+- PAResStatus = C
+
+Upon validating the above fields, you will call `[session continueWithTransactionId.. ]` to hand control to SDK for performing the challenge between the user and the issuing bank. Use the code snippet below for completing the session's continue.
+
+In continue for Quick Integration, a class conforming to a protocol CardinalValidationDelegate (and implement a method stepUpDidValidate) should be passed as a parameter. Following is the example of class conforming to CardinalValidationDelegate protocol.
+
+```text title="Implement CardinalValidationDelegate in Objective-C"
+@interface YourViewController ()  @end
+@implementation YourViewController
+
+(void)cardinalSession:(CardinalSession _)session
+stepUpDidValidateWithResponse:(CardinalResponse _)validateResponse
+serverJWT:(NSString \*)serverJWT {
+// Handle transaction validation result here
+}
+@end
+```
+
+If continue is being in the same class then the following method is called to start StepUpFlow:
+
+Call continueWithTransactionId in Objective-C
+
+````text title="[session continueWithTransactionId:@"
+payload:@"[PAYLOAD]" didValidateDelegate:self]; ```
+
+```swift session.continueWith(transactionId: "[TRANSACTION_ID]", payload:
+"[PAYLOAD]", validationDelegate: self) ```
+
+When the transaction has been terminated, the stepUpDidValidate method is triggered. This is how the Cardinal Mobile SDK hands control back to your application.
+
+This event includes key data about how the transaction attempt concluded, and it’s your responsibility to handle and interpret this information appropriately.
+
+- Use the actionCode field from the response to determine the
+final outcome of the transaction. - Recommended Handling - On receiving the
+callback, review the actionCode to assess the transaction status
+and decide the next steps. - If actionCode is either{" "}
+SUCCESS or NOACTION, you should forward the
+JWT to your backend for verification.
+
+```objective-c
+
+- (void)cardinalSession:(CardinalSession _)session stepUpDidValidateWithResponse:(CardinalResponse _)validateResponse serverJWT:(NSString \*)serverJWT { switch (validateResponse.actionCode) { case CardinalResponseActionCodeSuccess: // Transaction successful — send JWT to backend for verification break;
+
+case CardinalResponseActionCodeNoAction:
+    // No action taken by issuer
+    break;
+
+case CardinalResponseActionCodeFailure:
+    // Authentication failed
+    break;
+
+case CardinalResponseActionCodeError:
+    // SDK-level or issuer error
+    break;
+
+case CardinalResponseActionCodeCancel:
+    // User canceled the challenge
+    break;
+
+case CardinalResponseActionCodeTimeout:
+    // Challenge session timed out
+    break;
+
+}
+}
+````
+
+<Callout type="info">
+On `SUCCESS` or `NOACTION`, you should forward the JWT to your backend for verification. See the next section on **JWT Verification**.
+
+</Callout>
+
+9
+
+## JWT Validation
+
+Once the response JWT arrives in the `onValidated`, you must send it to your backend for verification and consumption.
+
+We recommend that any values shared with third parties are **only** sourced from the **validated JWT**.
+
+<Callout type="warn">
+**Security Warning:** For security reasons, all JWT validation must be performed on the **server side**.
+
+</Callout>
+
+For more information, see the [JWT Overview](https://developer.cardinaltrusted.com/reference/jwt-overview).
+
+10
+
+#### Combined Validation and Authorization (Enrolled Cards)
+
+Execute the `PAYER_AUTH_VALIDATION` action. Pass the `n3` received from the Cardinal SDK.
+
+```json title="Sample Payload"
+{
+	"payload": {
+		"is_mobile": true,
+		"authorization": {
+			"do_capture": false,
+			"sdk_on_validate_jwt": "eyJ..."
+		}
+	}
+}
+```
+
+#### Authorization (Non-Enrolled Cards)
+
+Execute the `AUTHORIZATION` action. Include the `is_mobile` flag.
+
+```json title="Sample Payload"
+{
+	"payload": {
+		"is_mobile": true,
+		"authorization": {
+			"do_capture": false
+		}
+	}
+}
+```
+
+```json title="Sample Response"
+{
+	"authorization_status": "authorized",
+	"transaction_id": "txn_67890"
+}
+```
+
+11
+
+### Cleanup
+
+<Callout type="warn">
+Failing to implement the cleanup method can cause unintentional memory leaks
+
+</Callout>
+
+```json title="Cleanup in Objective C"
+[cardinalService cleanup];
+```

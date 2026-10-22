@@ -1,0 +1,408 @@
+---
+title: "Fetch Tracker"
+description: "This page explains how to fetch a Tracker to see its state"
+---
+
+Fetch details for a payment using the tracker token.
+
+```bash title="Example how to fetch a tracker"
+curl --location 'https://sandbox.api.getsafepay.com/reporter/api/v1/payments/track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1'
+```
+
+```json title="Sample Response"
+{
+	"ok": true,
+	"data": {
+		"token": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+		"environment": "sandbox",
+		"state": "TRACKER_ENDED",
+		"intent": "CYBERSOURCE",
+		"mode": "payment",
+		"entry_mode": "raw",
+		"metadata": {
+			"order_id": {
+				"token": "meta_1592f0b7-4f51-4c54-9340-17457c53495e",
+				"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+				"key": "order_id",
+				"value": "rMF0crLNoQd1uyw9JCxEM1C4O",
+				"created_at": {
+					"seconds": 1724659902
+				},
+				"updated_at": {
+					"seconds": 1724659902
+				}
+			},
+			"source": {
+				"token": "meta_5c05f186-50eb-4087-af76-078628a72670",
+				"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+				"key": "source",
+				"value": "shopify",
+				"created_at": {
+					"seconds": 1724659902
+				},
+				"updated_at": {
+					"seconds": 1724659902
+				}
+			}
+		},
+		"client": {
+			"token": "client_160977e1-3ffc-49b9-88f3-88df96a78049",
+			"api_key": "sec_a8e0a889-b987-4b7e-9757-a6bf28e4d4e2",
+			"name": "Safepay Merchant",
+			"email": "safepaymerchant@gmail.com",
+			"avatar": "https://storage.googleapis.com/safepay-assets/27ed6ce0-929a-4ee7-9610-4579e58bb78d-logo.png"
+		},
+		"customer": {
+			"token": "guest_d559e694-aa91-4eff-83bb-6ed8ebd18bc4",
+			"first_name": "fatima",
+			"last_name": "aurangzeb",
+			"email": "faurangzeb@getsafepay.com",
+			"phone": "+92 343 0210640"
+		},
+		"next_actions": {
+			"CYBERSOURCE": {
+				"kind": "NOOP",
+				"request_id": "req_3848ba7a-22ab-4dd4-9b8a-c72d96e33c72"
+			},
+			"MPGS": {
+				"kind": "CREATE_SESSION"
+			}
+		},
+		"purchase_totals": {
+			"quote_amount": {
+				"currency": "PKR",
+				"amount": 290000
+			},
+			"base_amount": {
+				"currency": "PKR",
+				"amount": 290000
+			},
+			"conversion_rate": {
+				"base_currency": "PKR",
+				"quote_currency": "PKR",
+				"rate": 1
+			}
+		},
+		"charge": {
+			"token": "ch_0eada1c4-6651-4d19-9a48-71d06d0568ac",
+			"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+			"client": "sec_a8e0a889-b987-4b7e-9757-a6bf28e4d4e2",
+			"user": "guest_d559e694-aa91-4eff-83bb-6ed8ebd18bc4",
+			"amount": {
+				"currency": "PKR",
+				"amount": 290000
+			},
+			"fees": {
+				"currency": "PKR",
+				"amount": 9503
+			},
+			"tax": {
+				"currency": "PKR",
+				"amount": 1093
+			},
+			"net": {
+				"currency": "PKR",
+				"amount": 280497
+			},
+			"signature": "5da24f8e9085d86677afe35c72b3fa9ba5c7fdb184e9d7e32282f38258db57b7",
+			"capture": {
+				"token": "cap_4cec6b5e-fbbf-4055-b77f-a2434e61a58c",
+				"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+				"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+				"intent": "CYBERSOURCE",
+				"cybersource_rid": "7246601491246940904953",
+				"is_voidable": true,
+				"kind": "CAPTURE",
+				"totals": {
+					"currency": "PKR",
+					"amount": 290000
+				},
+				"created_at": {
+					"seconds": 1724660149
+				},
+				"updated_at": {
+					"seconds": 1724660149
+				}
+			},
+			"balance": {
+				"currency": "PKR",
+				"amount": 290000
+			},
+			"created_at": {
+				"seconds": 1724660149
+			},
+			"updated_at": {
+				"seconds": 1724660149
+			}
+		},
+		"events": [
+			{
+				"intent": "CYBERSOURCE",
+				"type": "ENROLLMENT",
+				"intent_request_id": "7246599431926829104951",
+				"reason": "Successful enrollment",
+				"created_at": {
+					"seconds": 1724659944
+				}
+			},
+			{
+				"intent": "CYBERSOURCE",
+				"type": "AUTHORIZATION",
+				"intent_request_id": "7246601446636939804953",
+				"reason": "Successful authorization",
+				"purchase_totals": {
+					"currency": "PKR",
+					"amount": 290000
+				},
+				"created_at": {
+					"seconds": 1724660146
+				}
+			},
+			{
+				"intent": "CYBERSOURCE",
+				"type": "CAPTURE",
+				"intent_request_id": "7246601491246940904953",
+				"reason": "Successful transaction",
+				"purchase_totals": {
+					"currency": "PKR",
+					"amount": 290000
+				},
+				"created_at": {
+					"seconds": 1724660149
+				}
+			}
+		],
+		"attempts": [
+			{
+				"token": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+				"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+				"intent": "CYBERSOURCE",
+				"idempotency_key": "req_3848ba7a-22ab-4dd4-9b8a-c72d96e33c72",
+				"kind": 1,
+				"actions_performed": [
+					{
+						"token": "act_f89128d2-5d6c-453d-ac03-db60b3dde8ac",
+						"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+						"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+						"kind": "PAYER_AUTH_SETUP",
+						"created_at": {
+							"seconds": 1724659902
+						},
+						"updated_at": {
+							"seconds": 1724659902
+						}
+					},
+					{
+						"token": "act_22092131-37f1-43f6-bc1f-5d17f3b71fbd",
+						"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+						"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+						"kind": "PAYER_AUTH_ENROLLMENT",
+						"created_at": {
+							"seconds": 1724659943
+						},
+						"updated_at": {
+							"seconds": 1724659943
+						}
+					},
+					{
+						"token": "act_ed9a7951-b647-4235-ae2a-66b66146e0bb",
+						"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+						"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+						"kind": "PAYER_AUTH_VALIDATION",
+						"created_at": {
+							"seconds": 1724660145
+						},
+						"updated_at": {
+							"seconds": 1724660145
+						}
+					},
+					{
+						"token": "act_f9401b2c-9c0b-4096-a169-131bc431c752",
+						"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+						"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+						"kind": "CAPTURE",
+						"created_at": {
+							"seconds": 1724660149
+						},
+						"updated_at": {
+							"seconds": 1724660149
+						}
+					}
+				],
+				"payment_method": {
+					"token": "method_466fbc51-dcb0-4c15-9c0a-4ba558c0669b",
+					"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+					"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+					"last_four": "1096",
+					"kind": "CARD",
+					"scheme": "Mastercard",
+					"bin": "520000",
+					"expiration_month": "02",
+					"expiration_year": "2029",
+					"created_at": {
+						"seconds": 1724659903
+					},
+					"updated_at": {
+						"seconds": 1724659903
+					}
+				},
+				"billing": {
+					"token": "bill_6c2ba4f5-a31c-484c-ae0e-e5c4b2c09799",
+					"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+					"street_1": "fefeg",
+					"city": "khi",
+					"postal_code": "12345",
+					"country": "PK",
+					"created_at": {
+						"seconds": 1724659944
+					},
+					"updated_at": {
+						"seconds": 1724659944
+					}
+				},
+				"enrollment": {
+					"token": "enroll_9e940ccb-75a2-4cd0-96b0-c83baa14e4bc",
+					"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+					"cybersource_rid": "7246599431926829104951",
+					"specification_version": "2.1.0",
+					"veres_enrolled": "Y",
+					"eci": "02",
+					"created_at": {
+						"seconds": 1724659944
+					},
+					"updated_at": {
+						"seconds": 1724659944
+					}
+				},
+				"risk": {
+					"token": "risk_16a82fba-fc08-4867-ba6d-8cd961cd4d56",
+					"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+					"score": "3",
+					"factor_codes": ["H"],
+					"info_codes": [
+						"MM-BIN",
+						"UNV-ADDR",
+						"VEL-NAME",
+						"VELI-CC",
+						"VELI-FP",
+						"VELI-TIP",
+						"VELL-CC",
+						"VELL-TIP",
+						"VELS-CC",
+						"VELV-CC",
+						"ID-M-HPOS",
+						"ID-X-HPOS",
+						"MORPH-C",
+						"MORPH-E",
+						"MORPH-FB",
+						"MORPH-FE",
+						"MORPH-FP",
+						"MORPH-FS",
+						"MORPH-P",
+						"MUL-EM",
+						"RISK-SD"
+					],
+					"created_at": {
+						"seconds": 1724660146
+					},
+					"updated_at": {
+						"seconds": 1724660146
+					}
+				},
+				"authorization": {
+					"token": "auth_b49e55ae-5806-4899-85f7-234e6fb1cdf9",
+					"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+					"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+					"intent": "CYBERSOURCE",
+					"cybersource_rid": "7246601446636939804953",
+					"totals": {
+						"currency": "PKR",
+						"amount": 290000
+					},
+					"created_at": {
+						"seconds": 1724660146
+					},
+					"updated_at": {
+						"seconds": 1724660146
+					}
+				},
+				"capture": {
+					"token": "cap_4cec6b5e-fbbf-4055-b77f-a2434e61a58c",
+					"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+					"attempt": "attemp_a14d3180-47c6-4c1e-99a9-d801108f17a7",
+					"intent": "CYBERSOURCE",
+					"cybersource_rid": "7246601491246940904953",
+					"is_voidable": true,
+					"kind": "CAPTURE",
+					"totals": {
+						"currency": "PKR",
+						"amount": 290000
+					},
+					"created_at": {
+						"seconds": 1724660149
+					},
+					"updated_at": {
+						"seconds": 1724660149
+					}
+				},
+				"is_success": true,
+				"created_at": {
+					"seconds": 1724659902
+				},
+				"updated_at": {
+					"seconds": 1724659902
+				},
+				"mode": "payment",
+				"entry_mode": "raw",
+				"customer": {
+					"token": "guest_d559e694-aa91-4eff-83bb-6ed8ebd18bc4",
+					"first_name": "fatima",
+					"last_name": "aurangzeb",
+					"email": "faurangzeb@getsafepay.com",
+					"phone": "+92 343 0210640"
+				}
+			}
+		],
+		"location": {
+			"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+			"token": "loc_8bcde9df-6bb5-4fbc-b178-91a9768dff13",
+			"ip_address": "203.130.3.66",
+			"city": "Karachi",
+			"country": "PK",
+			"latitude": 24.883,
+			"longitude": 67.058,
+			"region": "Sindh",
+			"created_at": {
+				"seconds": 1724660149
+			},
+			"updated_at": {
+				"seconds": 1724660149
+			}
+		},
+		"device": {
+			"tracker": "track_ac6afa9c-7f8b-4789-b84e-b39e6422bef1",
+			"token": "dev_e33ec87f-b818-439c-94a0-f747a3efc94f",
+			"user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.",
+			"entity": "browser",
+			"browser": "Chrome",
+			"browser_version": "128.0.0.0",
+			"device": "Mac",
+			"device_type": "desktop",
+			"platform": "macOS 10.15 Catalina",
+			"platform_icon": "https://assets.userstack.com/icon/os/macosx.png",
+			"created_at": {
+				"seconds": 1724660149
+			},
+			"updated_at": {
+				"seconds": 1724660149
+			}
+		},
+		"created_at": {
+			"seconds": 1724659902
+		},
+		"updated_at": {
+			"seconds": 1724659902
+		}
+	}
+}
+```

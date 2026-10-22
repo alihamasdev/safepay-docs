@@ -7,7 +7,6 @@
 		"dev": "next dev",
 		"start": "next start",
 		"generate:api": "node scripts/generate-docs.mjs",
-		"generate:docs": "node scripts/convert-safepay-docs.mjs",
 		"check": "next typegen && tsc --noEmit && oxlint && oxfmt --write",
 		"types": "next typegen && tsc --noEmit",
 		"lint": "oxlint",

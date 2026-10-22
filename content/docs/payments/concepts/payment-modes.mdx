@@ -1,0 +1,23 @@
+---
+title: "Payment modes"
+description: ""
+---
+
+The `mode` describes the purpose of the tracker. For now, it may take the following values:
+
+- `payment` for regular payments as a guest user.
+- `instrument` for saving a payment method to a customer's wallet.
+- `subscription` for recurring payments with a saved card.
+- `unscheduled_cof` for making a merchant initiated payment using a customer's saved card.
+
+<Callout type="info">
+`unscheduled_cof` applies to trackers where a customer object has been attached.
+
+</Callout>
+
+Older trackers may reference deprecated modes. These are:
+
+- `cof` or "card-on-file" that represents trackers paid with saved payment methods. The ability to pay with saved cards may be triggered using the `tms` entry mode.
+- `payment-raw` for payments that involve collecting payment method details in plaintext. This may now be triggered using the `raw` entry mode.
+
+Support for additional modes will be available in the future. By default the mode is set to `payment`.

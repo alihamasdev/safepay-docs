@@ -1,0 +1,508 @@
+---
+title: "Webhook structure and types"
+description: "Learn which webhook types are sent for each event."
+---
+
+Each webhook payload contains a `type` that specifies the type of event triggered.
+
+### Webhook structure
+
+Each webhook event contains the following fields:
+
+- `type`: Specifies the type of the event.
+- `version`: Specifies the currently used version of the webhook event
+- `data`: An object that contains the information about the event
+- `delivery_attempts`: The number of times this event has attempted to reach your servers
+- `next_attempt_at`: A timestamp indicating when this event will be re-sent for another attempt.
+
+### Event types and examples
+
+Safepay supports a broad range of webhook events that you can subscribe to.
+
+Because we sometimes create new webhook types and event codes, you should set up your server to be able to accept webhooks of more types and receive more event code values than are listed below. When we create a new event code, you have to create new business logic if you want to use it.
+
+Here are the currently supported events and example payloads for each.
+
+### Payment events
+
+- [`payment.succeeded`](/docs/developers/webhooks/webhook-types#paymentsucceeded): This event is fired when a payment is captured.
+- [`payment.failed`](/docs/developers/webhooks/webhook-types#paymentfailed): This event is fired when an error occurs during the payment process
+- [`payment.refunded`](/docs/developers/webhooks/webhook-types#paymentrefunded): This event is fired when a refund is made.
+- [`authorization.succeeded`](/docs/developers/webhooks/webhook-types#authorizationsucceeded): This event is fired when a card payment has been authorized.
+- [`authorization.reversed`](/docs/developers/webhooks/webhook-types#authorizationreversed): This event is fired when an authorization has been reversed.
+- [`void.succeeded`](/docs/developers/webhooks/webhook-types#voidsucceeded): This event is fired when a payment or refund has been voided.
+
+#### payment.succeeded
+
+```json title="Example payload for payment.succeeded event"
+{
+	"token": "evt_64b3218e-f65c-45a9-96b0-fe4e293bb879",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "payment.succeeded",
+	"endpoint": "http://example.com",
+	"data": {
+		"tracker": "track_06ee38cb-981d-4158-819f-7231f28314e4",
+		"intent": "CYBERSOURCE",
+		"state": "TRACKER_ENDED",
+		"net": 43525,
+		"fee": 1475,
+		"customer_email": "hzee@gmail.com",
+		"amount": 45000,
+		"currency": "PKR",
+		"metadata": {
+			"order_id": "AX-09u812312",
+			"source": "shopify"
+		},
+		"charged_at": {
+			"seconds": 1698754230,
+			"nanos": 752997627
+		}
+	},
+	"created_at": {
+		"seconds": 1698754230,
+		"nanos": 912705711
+	}
+}
+```
+
+#### payment.failed
+
+```json title="Example payload for payment.failed event"
+{
+	"token": "evt_e7069e13-e4a4-4518-b5ce-ee42e62b6797",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "payment.failed",
+	"endpoint": "http://example.com",
+	"data": {
+		"tracker": "track_138cf593-3d3f-4d54-b9c6-27a510afb780",
+		"intent": "CYBERSOURCE",
+		"state": "TRACKER_ENROLLED",
+		"customer_email": "hzee@gmail.com",
+		"metadata": {},
+		"category": "PAYMENT_METHOD_ERROR",
+		"code": 403,
+		"message": "The card you have used has been flagged as either stolen or lost. ",
+		"failed_at": {
+			"seconds": 1698754648,
+			"nanos": 494424793
+		}
+	},
+	"created_at": {
+		"seconds": 1698754648,
+		"nanos": 589390626
+	}
+}
+```
+
+#### payment.refunded
+
+```json title="Example payload for payment.refunded event"
+{
+	"token": "evt_48431483-2111-4328-8729-309c96c7a0f6",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "payment.refunded",
+	"endpoint": "http://example.com",
+	"data": {
+		"tracker": "track_06ee38cb-981d-4158-819f-7231f28314e4",
+		"intent": "CYBERSOURCE",
+		"state": "TRACKER_PARTIAL_REFUND",
+		"customer_email": "hzee@gmail.com",
+		"balance": 44000,
+		"currency": "PKR",
+		"metadata": {
+			"order_id": "AX-09u812312",
+			"source": "shopify"
+		},
+		"refund_amount": 1000,
+		"refunded_at": {
+			"seconds": 1698758038,
+			"nanos": 682810001
+		}
+	},
+	"created_at": {
+		"seconds": 1698758038,
+		"nanos": 880931084
+	}
+}
+```
+
+#### authorization.succeeded
+
+```json title="Example payload for authorization.succeeded event"
+{
+	"token": "evt_191b441e-a6f2-4d00-8bf3-01f8d5934fdp",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_ed8fa26a-e36d-49d2-89bd-1c72c8b5c133",
+	"type": "authorization.succeeded",
+	"endpoint": "http://example.com",
+	"data": {
+		"amount": 45000,
+		"authorization": "auth_9e3bb43e-3b54-44ad-a356-763677fa1d58",
+		"authorized_at": {
+			"nanos": 909405555,
+			"seconds": 1738066360
+		},
+		"currency": "PKR",
+		"customer_email": "test-notifications@getsafepay.com",
+		"intent": "CYBERSOURCE",
+		"metadata": {
+			"order_id": "AX-09u812312",
+			"source": "shopify"
+		},
+		"state": "TRACKER_AUTHORIZED",
+		"tracker": "track_06ee38cb-981d-4158-819f-7231f28314e4"
+	},
+	"created_at": {
+		"seconds": 1738066360,
+		"nanos": 909416680
+	}
+}
+```
+
+#### authorization.reversed
+
+```json title="Example payload for authorization.reversed event"
+{
+	"token": "evt_91ff4cf9-06e5-47ef-a110-2c82dccc8235",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "authorization.reversed",
+	"endpoint": "http://example.com",
+	"data": {
+		"tracker": "track_c3f7bc7e-7ae5-4e8a-b31d-b5bc74fa7e38",
+		"intent": "CYBERSOURCE",
+		"state": "TRACKER_REVERSED",
+		"customer_email": "hzee@gmail.com",
+		"metadata": {},
+		"reversed_authorization_id": "auth_9dce2ce2-4f65-4aa7-a1ff-8a9a3d6e64b3",
+		"reversed_at": {
+			"seconds": 1698757881,
+			"nanos": 354475053
+		}
+	},
+	"created_at": {
+		"seconds": 1698757881,
+		"nanos": 493894470
+	}
+}
+```
+
+#### void.succeeded
+
+```json title="Example payload for void.succeeded event"
+{
+	"token": "evt_846f361c-f3f8-492d-a3e9-f895ea9c91ce",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "void.succeeded",
+	"endpoint": "http://example.com",
+	"data": {
+		"tracker": "track_d927a58c-83cf-4e1a-904c-1b439fa913a4",
+		"intent": "CYBERSOURCE",
+		"state": "TRACKER_VOIDED",
+		"customer_email": "hzee@gmail.com",
+		"metadata": {
+			"order_id": "AX-09u812312",
+			"source": "shopify"
+		},
+		"void_type": "CAPTURE",
+		"voided_charge_id": "cap_d40b58da-cdba-4843-92ac-eb046ed325de",
+		"voided_at": {
+			"seconds": 1698758174,
+			"nanos": 715064342
+		}
+	},
+	"created_at": {
+		"seconds": 1698758174,
+		"nanos": 872747134
+	}
+}
+```
+
+### Subscription events
+
+- [`subscription.created`](/docs/developers/webhooks/webhook-types#subscriptioncreated): This event is fired when a customer subscribes to a recurring payment plan
+- [`subscription.canceled`](/docs/developers/webhooks/webhook-types#subscriptioncanceled): This event is fired when a subscription is canceled
+- [`subscription.ended`](/docs/developers/webhooks/webhook-types#subscriptionended): This event is fired when all billing cycles of a recurring payment subscription have been paid
+- [`subscription.paused`](/docs/developers/webhooks/webhook-types#subscriptionpaused): This event is fired when a subscription has been paused
+- [`subscription.resumed`](/docs/developers/webhooks/webhook-types#subscriptionresumed): This event is fired when a paused subscription has been resumed
+- [`subscription.payment.succeeded`](/docs/developers/webhooks/webhook-types#subscriptionpaymentsucceeded): This event is fired when a recurring payment cycle has been paid
+- [`subscription.payment.failed`](/docs/developers/webhooks/webhook-types#subscriptionpaymentfailed): This event is fired when a recurring payment cycle was not paid
+
+#### subscription.created
+
+```json title="Example payload for subscription.created event"
+{
+	"token": "evt_071ce9e0-6e95-4761-87a1-1de08be5a0c3",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "subscription.created",
+	"endpoint": "http://example.com",
+	"data": {
+		"id": "sub_73f6b269-4c8e-44d6-b55e-b982ef5f2835",
+		"plan_id": "plan_c749c21e-f075-4cc4-8d3d-4e44e6bf3623",
+		"customer_email": "hzaidi@getsafepay.com",
+		"status": "INCOMPLETE",
+		"billing_cycle_anchor": {
+			"seconds": 1698758572,
+			"nanos": 667943762
+		},
+		"amount": 100000,
+		"currency": "PKR",
+		"balance": "0",
+		"started_at": {
+			"seconds": 1698758572,
+			"nanos": 667943762
+		},
+		"expires": true,
+		"current_period_start_date": {
+			"seconds": 1698758572,
+			"nanos": 667943762
+		},
+		"current_period_end_date": {
+			"seconds": 1698758631,
+			"nanos": 667943762
+		},
+		"number_of_billing_cycles": 2,
+		"updated_at": {
+			"seconds": 1698758572,
+			"nanos": 667943762
+		},
+		"created_at": {
+			"seconds": 1698758572,
+			"nanos": 667943762
+		}
+	},
+	"created_at": {
+		"seconds": 1698758572,
+		"nanos": 935293429
+	}
+}
+```
+
+#### subscription.canceled
+
+```json title="Example payload for subscription.canceled event"
+{
+	"token": "evt_071ce9e0-6e95-4761-87a1-1de08be5a0c3",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "subscription.created",
+	"endpoint": "http://example.com",
+	"data": {
+		"id": "sub_479236af-b767-473b-acdf-6855db20c023",
+		"plan_id": "plan_22933989-a533-44d6-80d2-c1816571f451",
+		"customer_email": "hzaidi@getsafepay.com",
+		"status": "CANCELED",
+		"amount": 300000,
+		"currency": "PKR",
+		"balance": "0",
+		"canceled_at": {
+			"seconds": 1698759228
+		},
+		"updated_at": {
+			"seconds": 1698759228
+		},
+		"created_at": {
+			"seconds": 1698759224
+		}
+	},
+	"created_at": {
+		"seconds": 1698758572,
+		"nanos": 935293429
+	}
+}
+```
+
+#### subscription.ended
+
+```json title="Example payload for subscription.ended event"
+{
+	"token": "evt_1ba6f54f-4ed9-4e5a-b7a1-cd45598ec432",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "subscription.ended",
+	"endpoint": "http://example.com",
+	"data": {
+		"id": "sub_73f6b269-4c8e-44d6-b55e-b982ef5f2835",
+		"plan_id": "plan_c749c21e-f075-4cc4-8d3d-4e44e6bf3623",
+		"customer_email": "hzaidi@getsafepay.com",
+		"status": "ENDED",
+		"amount": 100000,
+		"currency": "PKR",
+		"balance": "0",
+		"updated_at": {
+			"seconds": 1698758619
+		},
+		"created_at": {
+			"seconds": 1698758573
+		}
+	},
+	"created_at": {
+		"seconds": 1698758645,
+		"nanos": 20656046
+	}
+}
+```
+
+#### subscription.paused
+
+```json title="Example payload for subscription.paused event"
+{
+	"token": "evt_3ebf1fea-b065-4a7d-925c-199245f98114",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "subscription.paused",
+	"endpoint": "http://example.com",
+	"data": {
+		"id": "sub_7e48edb7-daf8-47bf-9679-5b1cf24ff614",
+		"plan_id": "plan_22933989-a533-44d6-80d2-c1816571f451",
+		"customer_email": "hzaidi@getsafepay.com",
+		"status": "PAUSED",
+		"billing_cycle_anchor": {
+			"seconds": 1698760037
+		},
+		"amount": 300000,
+		"currency": "PKR",
+		"balance": "0",
+		"paused_at": {
+			"seconds": 1698760042
+		},
+		"updated_at": {
+			"seconds": 1698760042
+		},
+		"created_at": {
+			"seconds": 1698760037
+		}
+	},
+	"created_at": {
+		"seconds": 1698760042,
+		"nanos": 438161220
+	}
+}
+```
+
+#### subscription.resumed
+
+```json title="Example payload for subscription.resumed event"
+{
+	"token": "evt_9e0c9f81-8607-4fd7-936c-56fed465ee90",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "subscription.resumed",
+	"endpoint": "http://example.com",
+	"data": {
+		"id": "sub_5726bec7-1d2a-424d-a650-04b963c0e854",
+		"plan_id": "plan_c749c21e-f075-4cc4-8d3d-4e44e6bf3623",
+		"customer_email": "hzaidi@getsafepay.com",
+		"status": "ACTIVE",
+		"billing_cycle_anchor": {
+			"seconds": 1698760196
+		},
+		"amount": 100000,
+		"currency": "PKR",
+		"balance": "0",
+		"resumed_at": {
+			"seconds": 1698760196
+		},
+		"updated_at": {
+			"seconds": 1698760196
+		},
+		"created_at": {
+			"seconds": 1698760185
+		}
+	},
+	"created_at": {
+		"seconds": 1698760196,
+		"nanos": 518876958
+	}
+}
+```
+
+#### subscription.payment.succeeded
+
+```json title="Example payload for subscription.payment.succeeded event"
+{
+	"token": "evt_ea9ab1a2-4a3b-478a-ac82-cb986b60242e",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_edeade52-46aa-483b-b87d-009d3ce41554",
+	"type": "subscription.payment.succeeded",
+	"endpoint": "http://example.com",
+	"data": {
+		"id": "sub_73f6b269-4c8e-44d6-b55e-b982ef5f2835",
+		"plan_id": "plan_c749c21e-f075-4cc4-8d3d-4e44e6bf3623",
+		"customer_email": "hzaidi@getsafepay.com",
+		"status": "ACTIVE",
+		"billing_cycle_anchor": {
+			"seconds": 1698758633
+		},
+		"amount": 100000,
+		"currency": "PKR",
+		"balance": "0",
+		"current_period_start_date": {
+			"seconds": 1698758633
+		},
+		"current_period_end_date": {
+			"seconds": 1698758692
+		},
+		"last_paid_date": {
+			"seconds": 1698758586,
+			"nanos": 667158380
+		},
+		"current_billing_cycle": 1,
+		"updated_at": {
+			"seconds": 1698758573
+		},
+		"created_at": {
+			"seconds": 1698758573
+		},
+		"transaction_id": "txn_8b29b706-168d-4b38-991c-ac77620a29b7",
+		"transaction_status": "COMPLETE"
+	},
+	"created_at": {
+		"seconds": 1698758586,
+		"nanos": 858671671
+	}
+}
+```
+
+#### subscription.payment.failed
+
+```json title="Example payload for subscription.payment.failed event"
+{
+	"token": "evt_3f8ee089-c083-4475-af48-036b38140053",
+	"version": "2.0.0",
+	"merchant_api_key": "sec_d2ec84f8-eae4-4e50-80ba-dad01c7bab83",
+	"type": "subscription.payment.failed",
+	"endpoint": "https://example.com",
+	"data": {
+		"id": "sub_b55072cf-2556-4c17-82b4-dae075960df8",
+		"plan_id": "plan_8ae8e989-08fd-47dd-9a95-04056c83b6fa",
+		"customer_email": "hzaidi@getsafepay.com",
+		"status": "UNPAID",
+		"billing_cycle_anchor": {
+			"seconds": 1710824626
+		},
+		"amount": 405100,
+		"currency": "PKR",
+		"balance": "0",
+		"updated_at": {
+			"seconds": 1710824626
+		},
+		"created_at": {
+			"seconds": 1710824626
+		},
+		"transaction_id": "txn_b54bb42c-bc55-481b-b1d9-fd945f44f8c3",
+		"transaction_status": "FAILED",
+		"transaction_error_code": "NONE_TRANSACTION_FAILURE_CODE",
+		"transaction_error_message": "unrecognized or unsupported action kind"
+	},
+	"created_at": {
+		"seconds": 1710825617,
+		"nanos": 655468013
+	}
+}
+```
