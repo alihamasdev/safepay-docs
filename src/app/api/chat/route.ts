@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { source } from "@/lib/source";
 
-import { ChatUIMessage, SearchTool } from "../../../components/ai/search";
+import { type ChatUIMessage, type SearchTool } from "../../../components/ai/search";
 
 interface CustomDocument extends DocumentData {
 	url: string;

@@ -1,14 +1,13 @@
 "use client";
 
 import { createCodeUsageGeneratorRegistry } from "fumadocs-openapi/requests/generators";
+import type { CodeUsageGenerator } from "fumadocs-openapi/requests/generators";
 import { curl } from "fumadocs-openapi/requests/generators/curl";
 import { javascript } from "fumadocs-openapi/requests/generators/javascript";
 import { python } from "fumadocs-openapi/requests/generators/python";
 import { createOpenAPIPage } from "fumadocs-openapi/ui";
 
 import { getPaymentAction } from "@/lib/payments-data";
-
-import type { CodeUsageGenerator } from "fumadocs-openapi/requests/generators";
 
 const phpGenerator: CodeUsageGenerator = {
 	label: "PHP",

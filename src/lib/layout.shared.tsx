@@ -1,8 +1,8 @@
+import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+
 import { Logo } from "@/components/icons";
 
 import { gitConfig } from "./shared";
-
-import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 export function baseOptions(): BaseLayoutProps {
 	return {
