@@ -35,13 +35,13 @@ const navItems: NavItem[] = [
 	},
 	{
 		label: "Payments",
-		href: "/docs/payments/overview",
+		href: "/docs/payments",
 		icon: CreditCardIcon,
 		isActive: (pathname: string) => pathname.startsWith("/docs/payments"),
 	},
 	{
 		label: "Developers",
-		href: "/docs/developers/overview",
+		href: "/docs/developers",
 		icon: Code2Icon,
 		isActive: (pathname: string) => pathname.startsWith("/docs/developers"),
 	},

@@ -2,7 +2,7 @@
 	"title": "Developers",
 	"root": true,
 	"pages": [
-		"overview",
+		"index",
 		"---Setup Safepay---",
 		"...safepay",
 		"---Payment journeys---",

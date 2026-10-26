@@ -2,7 +2,7 @@
 	"title": "Payments",
 	"root": true,
 	"pages": [
-		"overview",
+		"index",
 		"---Get started---",
 		"...get-started",
 		"---Modify payments---",

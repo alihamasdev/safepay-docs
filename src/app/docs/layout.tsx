@@ -35,13 +35,13 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
 				},
 				{
 					title: "Payments",
-					url: "/docs/payments/overview",
+					url: "/docs/payments",
 					icon: <CreditCardIcon className="size-4" />,
 					urls: paymentsUrls,
 				},
 				{
 					title: "Developers",
-					url: "/docs/developers/overview",
+					url: "/docs/developers",
 					icon: <Code2Icon className="size-4" />,
 					urls: developersUrls,
 				},
