@@ -1,68 +1,50 @@
 ---
-title: "Safepay Atoms React Native Overview"
+title: "Safepay React Native"
 description: "Decide your integration flow."
 ---
 
-## React Native Integration for Safepay 3DS Flow
-
 Follow the steps below to integrate the `SafepayPayerAuthentication` component into your React Native application. This guide provides instructions and highlights what each step achieves.
 
----
+## Step 5: Import Required Modules
 
-### Step 5: Import Required Modules
+<Callout type="info">To start using Safepay authentication, import the required components and types from `@sfpy/react-native`.</Callout>
 
-<Callout type="info">
-To start using Safepay authentication, import the required components and types from `@sfpy/react-native`.
-
-</Callout>
-
-```
+```javascript
 import {
-  SafepayPayerAuthentication,
-  SafepayContext,
-  EnrollmentAuthenticationStatus,
-  Cardinal3dsSuccessData,
-  Cardinal3dsFailureData,
-  AuthorizationResponse,
-  PayerAuthEnrollmentFailureError,
+	SafepayPayerAuthentication,
+	SafepayContext,
+	EnrollmentAuthenticationStatus,
+	Cardinal3dsSuccessData,
+	Cardinal3dsFailureData,
+	AuthorizationResponse,
+	PayerAuthEnrollmentFailureError,
 } from "@sfpy/react-native";
 ```
 
----
+## Step 6: Set Up SafepayContext
 
-### Step 6: Set Up SafepayContext
+<Callout type="info">The `SafepayContext` provides authentication and customer data needed for the flow.</Callout>
 
-<Callout type="info">
-The `SafepayContext` provides authentication and customer data needed for the flow.
-
-</Callout>
-
-```
+```javascript
 const values = {
-  clientSecret: "0wX...A==", // JWT or Time-Based Token
-  tracker: "track_c22f4888-dd09-4b99-83ec-e65dd9fc7b88", // Payment tracker token
-  deviceDataCollectionJWT: "eys...f84", // From Safepay Payment API
-  deviceDataCollectionURL:
-    "https://centinelapistag.cardinalcommerce.com/V1/Cruise/Collect",
-  street_1: "St 12",
-  street_2: "",
-  city: "Islamabad",
-  state: "",
-  postal_code: "44000",
-  country: "PK",
+	clientSecret: "0wX...A==", // JWT or Time-Based Token
+	tracker: "track_c22f4888-dd09-4b99-83ec-e65dd9fc7b88", // Payment tracker token
+	deviceDataCollectionJWT: "eys...f84", // From Safepay Payment API
+	deviceDataCollectionURL: "https://centinelapistag.cardinalcommerce.com/V1/Cruise/Collect",
+	street_1: "St 12",
+	street_2: "",
+	city: "Islamabad",
+	state: "",
+	postal_code: "44000",
+	country: "PK",
 };
 ```
 
----
+## Step 7: Render the Component
 
-### Step 7: Render the Component
+<Callout type="info">Wrap your authentication component with `SafepayContext.Provider` and provide the required props.</Callout>
 
-<Callout type="info">
-Wrap your authentication component with `SafepayContext.Provider` and provide the required props.
-
-</Callout>
-
-```
+```javascript
 <SafepayContext.Provider value={values}>
   <SafepayPayerAuthentication
     environment={ENVIRONMENT.DEVELOPMENT}
@@ -88,95 +70,90 @@ Wrap your authentication component with `SafepayContext.Provider` and provide th
 </SafepayContext.Provider>
 ```
 
----
-
-### Step 8: Understand Callback Usage
+## Step 8: Understand Callback Usage
 
 <Callout type="info">
-The component emits specific callbacks based on authentication events. Use these to monitor and handle the flow.
-
+	The component emits specific callbacks based on authentication events. Use these to monitor and handle the flow.
 </Callout>
 
-#### onCardinalSuccess
+### onCardinalSuccess
 
 Fires when Cardinal 3DS succeeds:
 
-```
+```json
 {
-  "detail": {
-    "payment_method": null,
-    "request_id": "req_23461744-c342-42ef-9bed-f54f709c40d9",
-    "tracker": "track_a098c800-a24b-4eb2-ab62-aa8967a099df"
-  },
-  "name": "safepay-inframe__cardinal-3ds__success",
-  "type": "safepay-inframe-event"
+	"detail": {
+		"payment_method": null,
+		"request_id": "req_23461744-c342-42ef-9bed-f54f709c40d9",
+		"tracker": "track_a098c800-a24b-4eb2-ab62-aa8967a099df"
+	},
+	"name": "safepay-inframe__cardinal-3ds__success",
+	"type": "safepay-inframe-event"
 }
 ```
 
-#### onCardinalError
+### onCardinalError
 
 Fires when Cardinal 3DS fails:
 
-```
+```json
 {
-  "detail": {
-    "error": "error performing action 'PAYER_AUTH_ENROLLMENT': Encountered an error while performing payer authentication: payer could not be authenticated. Please try again with a different card or another form of payment.",
-    "request_id": null,
-    "tracker": "track_03ca9dca-3ee5-40fe-95e3-931554d0ef16"
-  },
-  "name": "safepay-inframe__cardinal-3ds__failure",
-  "type": "safepay-inframe-event"
+	"detail": {
+		"error": "error performing action 'PAYER_AUTH_ENROLLMENT': Encountered an error while performing payer authentication: payer could not be authenticated. Please try again with a different card or another form of payment.",
+		"request_id": null,
+		"tracker": "track_03ca9dca-3ee5-40fe-95e3-931554d0ef16"
+	},
+	"name": "safepay-inframe__cardinal-3ds__failure",
+	"type": "safepay-inframe-event"
 }
 ```
 
-#### onPayerAuthEnrollmentRequired
+### onPayerAuthEnrollmentRequired
 
 Triggered when payer enrollment is required. No response data.
 
-#### onPayerAuthEnrollmentFrictionless
+### onPayerAuthEnrollmentFrictionless
 
 Called on successful frictionless enrollment:
 
-```
+```json
 {
-  "detail": {
-    "request_id": "req_b15699bd-415e-4ed3-866b-227bbe69f714",
-    "tracker": "track_c6ead7f5-681c-469e-ab9f-4f2cc1f144e8"
-  },
-  "name": "safepay-inframe__enrollment__frictionless",
-  "type": "safepay-inframe-event"
+	"detail": {
+		"request_id": "req_b15699bd-415e-4ed3-866b-227bbe69f714",
+		"tracker": "track_c6ead7f5-681c-469e-ab9f-4f2cc1f144e8"
+	},
+	"name": "safepay-inframe__enrollment__frictionless",
+	"type": "safepay-inframe-event"
 }
 ```
 
-#### onPayerAuthEnrollmentFailure
+### onPayerAuthEnrollmentFailure
 
 Fires when enrollment fails:
 
-```
+```json
 {
-  "detail": {
-    "errorMessage": "error performing action 'PAYER_AUTH_ENROLLMENT': Encountered an error while performing payer authentication: payer could not be authenticated. Please try again with a different card or another form of payment."
-  },
-  "name": "safepay-inframe__enrollment__failed",
-  "type": "safepay-inframe-event"
+	"detail": {
+		"errorMessage": "error performing action 'PAYER_AUTH_ENROLLMENT': Encountered an error while performing payer authentication: payer could not be authenticated. Please try again with a different card or another form of payment."
+	},
+	"name": "safepay-inframe__enrollment__failed",
+	"type": "safepay-inframe-event"
 }
 ```
 
-#### onSafepayError
+### onSafepayError
 
 Generic error handler:
 
-```
+```json
 {
-  "detail": {
-    "error": {
-      "status": 400,
-      "type": "SafepayAPIError"
-    }
-  },
-  "name": "safepay-error",
-  "type": "safepay-inframe-event"
+	"detail": {
+		"error": {
+			"status": 400,
+			"type": "SafepayAPIError"
+		}
+	},
+	"name": "safepay-error",
+	"type": "safepay-inframe-event"
 }
 ```
-
----

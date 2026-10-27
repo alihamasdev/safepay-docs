@@ -3,6 +3,8 @@ title: "Advanced Checkout integration guide"
 description: "Accept payments using the Advanced flow."
 ---
 
+import { AtomIcon, GlobeIcon, PlugIcon } from "lucide-react";
+
 If you want full control over the look and feel of your checkout page, use our APIs to build your own payment form. If you'd rather not build your own payment form, check out our [Express Checkout guide](/docs/payments/get-started/express-checkout).
 
 With our custom API solution, you can accept payments with the following use cases:
@@ -25,38 +27,20 @@ After you have created your test account:
 
 <Callout type="info">
 **Authorization:** Authenticate server-side requests with an API Key header.
-
 - **Key:** `X-SFPY-MERCHANT-SECRET`
 - **Value:** `<Your secret key>`
-
 </Callout>
 
 ## Accept a Payment with Card Details
 
 ### How It Works
 
-```mermaid
-sequenceDiagram
-  participant Customer
-  participant Website as Merchant Website
-  participant Safepay
-  participant Server as Merchant Server
-
-Customer->>Website: Visit checkout and enter details
-Website->>Safepay: Request to setup tracker
-Customer->>Website: Click Pay
-Website->>Safepay: Send customer details
-Safepay-->>Website: Respond with Device Data parameters
-Website->>Safepay: Perform Device Data Collection
-Website->>Safepay: Initiate 3DS Authentication
-Safepay-->>Customer: Redirect to bank’s ACS
-Customer-->>Safepay: Complete challenge
-Safepay-->>Website: Redirect back to merchant
-Website->>Customer: Show confirmation page
-Safepay-->>Server: Send webhook with outcome
+```text
+Diagram Goes Here
 ```
 
-1
+<Steps>
+<Step>
 
 ## Install an API library
 
@@ -67,35 +51,69 @@ We provide two official server-side API libraries for Node and PHP that allow yo
 - Handle common errors and exceptions.
 - Send the request to Safepay using their built-in HTTP client, so you do not have to create your own.
 
-#### Requirements
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+<h4>Requirements</h4>
 
 - Node.js version 18 or later.
 
-#### Installation
+<h4>Installation</h4>
 
-```text
-# Install the API library
+You can use [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/).
+
+```bash
 npm install --save @sfpy/node-core
-# Update the API library
-npm update @sfpy/node-core
 ```
 
-2
+</Tab>
+<Tab value="PHP">
+
+<h4>Requirements</h4>
+
+- PHP 5.6.0 or later.
+- cURL with SSL support.
+- The JSON PHP extension.
+- The list of dependencies from the composer require list.
+
+<h4>Installation</h4>
+
+You can use [Composer](https://getcomposer.org/). Follow the [installation instructions](https://getcomposer.org/doc/00-intro.md) if you don't already have composer installed.
+
+```bash
+composer require getsafepay/sfpy-php
+```
+
+In your PHP script, make sure you include the autoloader:
+
+```php title="Include the autoloader"
+require_once 'vendor/autoload.php';
+```
+
+Alternatively, you can follow the installation instructions on [GitHub](https://github.com/getsafepay/sfpy-php).
+
+</Tab>
+</Tabs>
 
 ## Create a payment session
 
 When your customer lands on your checkout page but before they click on the Pay button, you must [create a Tracker](https://apidocs.getsafepay.com/#647f1146-d656-4868-a695-34ad8fcabeb2) with the relevant data. For example:
 
-```javascript title="Create a payment session in NodeJS"
-const safepay = require("@sfpy/node-core")("YOUR_SECRET_KEY", {
+<Tabs items={["Node JS", "PHP", "cURL"]}>
+<Tab value="Node JS">
+
+```javascript
+const Safepay = require("@sfpy/node-core");
+
+const safepay = new Safepay(process.env.SAFEPAY_SECRET_KEY, {
 	authType: "secret",
-	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+	host: process.env.SAFEPAY_HOST,
 });
 
 (async () => {
 	try {
 		const response = await safepay.payments.session.setup({
-			merchant_api_key: "YOUR_API_KEY",
+			merchant_api_key: "SAFEPAY_API_KEY",
 			user: "cust_a7cc6fc1-088d-4f35-9dac-2bab2cb234a1",
 			intent: "CYBERSOURCE",
 			mode: "payment",
@@ -105,6 +123,7 @@ const safepay = require("@sfpy/node-core")("YOUR_SECRET_KEY", {
 			metadata: {
 				order_id: "1234567890",
 			},
+			include_fees: false,
 		});
 	} catch (err) {
 		console.log(err);
@@ -112,12 +131,68 @@ const safepay = require("@sfpy/node-core")("YOUR_SECRET_KEY", {
 })();
 ```
 
-<Callout type="info">
-It’s important to note that linking a Merchant Shopper to a tracker during the setup phase is advantageous as it prevents you from having to pass this information in later stages. To understand how to create and manage your Merchant Shoppers, please refer to our [guide on merchant shoppers](/docs/payments/concepts/shoppers).
+</Tab>
+<Tab value="PHP">
 
+```php
+$safepay = new \Safepay\SafepayClient([
+  'api_key' => getenv('SAFEPAY_SECRET_KEY'),
+  'api_base' => getenv('SAFEPAY_HOST') ?: 'https://sandbox.api.getsafepay.com'
+]);
+
+try {
+$session = $safepay->order->setup([
+"merchant_api_key" => "SAFEPAY_API_KEY",
+"user" => "cust_a7cc6fc1-088d-4f35-9dac-2bab2cb234a1",
+"intent" => "CYBERSOURCE",
+"mode" => "payment",
+"entry_mode": "raw",
+"currency" => "USD",
+"amount" => 10000,
+"metadata" => [
+"order_id" => "1234567890"
+],
+"include_fees" => false
+]);
+} catch(\UnexpectedValueException $e) {
+// Invalid payload
+http_response_code(400);
+exit();
+}
+```
+
+</Tab>
+<Tab value="cURL">
+
+```bash
+curl --location 'https://sandbox.api.getsafepay.com/order/payments/v3/' \
+
+--data '{
+"merchant_api_key": "SAFEPAY_API_KEY",
+"user": "cust_a7cc6fc1-088d-4f35-9dac-2bab2cb234a1",
+"intent": "CYBERSOURCE",
+"mode": "payment",
+"entry_mode": "raw",
+"currency": "USD",
+"amount": 10000,
+"metadata": {
+"order_id": "1234567890"
+},
+"include_fees": false
+}'
+```
+
+</Tab>
+</Tabs>
+
+<Callout type="info">
+	It's important to note that linking a Merchant Shopper to a tracker during the setup phase is advantageous as it prevents you from having
+	to pass this information in later stages. To understand how to create and manage your Merchant Shoppers, please refer to our [guide on
+	merchant shoppers](/docs/payments/concepts/shoppers).
 </Callout>
 
-3
+</Step>
+<Step>
 
 ## Generate a client token
 
@@ -127,10 +202,15 @@ To do this, you first need to generate a temporary client-side authentication to
 
 For example:
 
-```javascript title="Create an authentication token in NodeJS"
-const safepay = require("@sfpy/node-core")("YOUR_SECRET_KEY", {
+<Tabs items={["Node JS", "PHP", "cURL"]}>
+<Tab value="Node JS">
+
+```javascript
+const Safepay = require("@sfpy/node-core");
+
+const safepay = new Safepay(process.env.SAFEPAY_SECRET_KEY, {
 	authType: "secret",
-	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+	host: process.env.SAFEPAY_HOST,
 });
 
 (async () => {
@@ -142,6 +222,35 @@ const safepay = require("@sfpy/node-core")("YOUR_SECRET_KEY", {
 })();
 ```
 
+</Tab>
+<Tab value="PHP">
+
+```php
+$safepay = new \Safepay\SafepayClient([
+  'api_key' => 'YOUR_SECRET_KEY',
+  'api_base' => 'https://sandbox.api.getsafepay.com' // for live payments use https://api.getsafepay.com
+]);
+
+try {
+  $response = $safepay->passport->create();
+} catch(\UnexpectedValueException $e) {
+    // Invalid payload
+    http_response_code(400);
+    exit();
+}
+```
+
+</Tab>
+<Tab value="cURL">
+
+```bash
+curl --location --request POST 'https://sandbox.api.getsafepay.com/client/passport/v1/token' \
+-H 'X-SFPY-MERCHANT-SECRET: YOUR_SECRET_KEY'
+```
+
+</Tab>
+</Tabs>
+
 The [`/client/passport/v1/token`](https://apidocs.getsafepay.com/#d5b420ca-32bf-437a-be9c-ca66ada21110) response will give you the authentication token you will need to authorize future requests to Safepay APIs from your website.
 
 For example:
@@ -152,11 +261,12 @@ For example:
 }
 ```
 
-Expiration
+### Expiration
 
 A single authentication token lasts for 1 hour. If the authentication token expires, any further requests to the Safepay APIs will result in a 401 Unauthorized error. You must regenerate the authentication token.
 
-4
+</Step>
+<Step>
 
 ## Payer Authentication
 
@@ -168,28 +278,28 @@ After creating the payment session and the client side token, the next step is t
 | **Safepay React Native** | React Native                                           |
 | **Cardinal SDK**         | Android (Java, Kotlin) & iOS (Objective c, Swift) only |
 
-Please see the Payer Authentication Methods Available
+Please see the Payer Authentication Methods Available:
 
-[
+<Cards>
+	<Card
+		icon={<GlobeIcon />}
+		title="Safepay Atoms Web"
+		href="/docs/payments/get-started/express-checkout?platform=web"
+		description="Accept payments on your website or app."
+	/>
+	<Card
+		icon={<AtomIcon />}
+		title="Safepay React Native"
+		href="/docs/payments/get-started/express-checkout?platform=react-native"
+		description="Accept payments on your cross-platform mobile apps."
+	/>
+	<Card
+		icon={PlugIcon}
+		title="Cardinal SDK"
+		href="/docs/payments/get-started/introduction"
+		description="Accept payments on your app natively"
+	/>
+</Cards>
 
-#### Safepay Atoms Web
-
-Accept payments on your website or app.
-
-](/docs/payments/get-started/advanced-checkout/safepay-atoms)
-
-[
-
-#### Safepay React Native
-
-Accept payments on your cross-platform mobile apps.
-
-](/docs/payments/get-started/advanced-checkout/safepay-react)
-
-[
-
-#### Cardinal SDK
-
-Accept payments on your app natively
-
-](/docs/payments/get-started/advanced-checkout/cardinal)
+</Step>
+</Steps>

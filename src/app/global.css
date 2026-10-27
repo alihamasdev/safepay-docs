@@ -59,3 +59,8 @@ aside#nd-sidebar > div > div:first-child {
 #nd-page-panel {
 	margin-top: 0px;
 }
+
+/* Ensure content position stays consistent whether TOC is present or not */
+#fd-spacious-layout:has(#nd-page:not([data-full="true"])) {
+	--fd-toc-width: calc(var(--spacing) * 76);
+}

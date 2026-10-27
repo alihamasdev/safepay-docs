@@ -1,13 +1,12 @@
 ---
-title: "Subscriptions integration guide"
+title: "Subscriptions"
 description: "Accept recurring payments with Safepay Subscriptions using a hosted checkout flow."
 ---
 
 Safepay Subscriptions enable recurring billing (daily, weekly, monthly, yearly). The customer must approve billing through Safepay Checkout — subscriptions cannot be created silently via API.
 
 <Callout type="info">
-Subscriptions are event-driven. Your system's source of truth must be webhook events — not redirect responses, not API polling.
-
+	Subscriptions are event-driven. Your system's source of truth must be webhook events, not redirect responses or API polling.
 </Callout>
 
 ## How it works
@@ -42,10 +41,7 @@ Before you begin to integrate, make sure you have:
 - An HTTPS-enabled backend server (TLSv1.2 or TLSv1.3)
 - A publicly reachable webhook endpoint
 
-<Callout type="warn">
-**Warning:** Sandbox and Live have different Secret Keys and different HMAC keys. Never mix environments.
-
-</Callout>
+<Callout type="warn">**Warning:** Sandbox and Live have different Secret Keys and different HMAC keys. Never mix environments.</Callout>
 
 After you have created your test account:
 
@@ -54,10 +50,8 @@ After you have created your test account:
 
 <Callout type="info">
 **Authorization:** Authenticate server-side requests with an API Key header.
-
 - **Key:** `X-SFPY-MERCHANT-SECRET`
 - **Value:** `<Your secret key>`
-
 </Callout>
 
 ## Integration steps
@@ -72,35 +66,77 @@ After you have created your test account:
 8.  Configure environment variables and dashboard endpoints.
 9.  Test your integration and go live.
 
-1
+<Steps>
+<Step>
 
-## Install an API library
+### Install an API library
 
 We provide official server-side API libraries for Node.js and PHP that allow you to interact with the Safepay API easily.
 
-#### Requirements
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+<h4>Requirements</h4>
 
 - Node.js version 18 or later.
 
-```text
-# Install the API library
+<h4>Installation</h4>
+
+```bash
 npm install --save @sfpy/node-core
 ```
 
-2
+</Tab>
+<Tab value="PHP">
 
-## Create a subscription plan
+<h4>Requirements</h4>
+
+- PHP 5.6.0 or later.
+- cURL with SSL support.
+- The JSON PHP extension.
+- The list of dependencies from the composer require list.
+
+<h4>Installation</h4>
+
+You can use [Composer](https://getcomposer.org/). Follow the [installation instructions](https://getcomposer.org/doc/00-intro.md) if you don't already have composer installed.
+
+```bash
+composer require getsafepay/sfpy-php
+```
+
+In your PHP script, include the autoloader and initialize the client:
+
+```php title="Initialize the PHP client"
+<?php
+require_once('vendor/autoload.php');
+
+$safepay = new \Safepay\SafepayClient([
+  'api_key' => 'SAFEPAY_SECRET_KEY',
+  'api_base' => 'https://sandbox.api.getsafepay.com' // for live: https://getsafepay.com
+]);
+```
+
+</Tab>
+</Tabs>
+
+</Step>
+<Step>
+
+### Create a subscription plan
 
 Create a plan once via the Safepay Dashboard or API. Plans are reusable — you do not recreate a plan per customer. Save the returned `planId` (token) for all subsequent checkout generation.
 
 You can also create plans in the Merchant Dashboard under Subscriptions. Prefer the Dashboard or SDK for plan creation.
 
-```javascript title="Create a subscription plan in NodeJS"
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+```javascript
 const Safepay = require("@sfpy/node-core");
 
 const safepay = new Safepay(process.env.SAFEPAY_SECRET_KEY, {
 	authType: "secret",
-	host: process.env.SAFEPAY_HOST, // Use env var — never hardcode
+	host: process.env.SAFEPAY_HOST,
 });
 
 async function createPlan() {
@@ -126,7 +162,40 @@ async function createPlan() {
 }
 ```
 
-Example response (sandbox placeholder):
+</Tab>
+<Tab value="PHP">
+
+```php
+$safepay = new \Safepay\SafepayClient([
+  'api_key' => getenv('SAFEPAY_SECRET_KEY'),
+  'api_base' => getenv('SAFEPAY_HOST') ?: 'https://sandbox.api.getsafepay.com'
+]);
+
+try {
+  // Prefer Dashboard if your PHP SDK version does not expose plans
+  $response = $safepay->client->plans->create([
+    'payload' => [
+      'amount' => '5000',
+      'currency' => 'PKR',
+      'interval' => 'MONTH',
+      'interval_count' => 1,
+      'billing_cycles' => 0,
+      'type' => 'RECURRING',
+      'product' => 'premium-plan',
+      'active' => true
+    ]
+  ]);
+
+  $planId = $response->data->token;
+  echo "Plan created: {$planId}\n";
+} catch (\Exception $e) {
+  error_log('Plan creation failed: ' . $e->getMessage());
+  throw $e;
+}
+```
+
+</Tab>
+</Tabs>
 
 ```json title="Plan creation response"
 {
@@ -149,8 +218,9 @@ Example response (sandbox placeholder):
 ```
 
 <Callout type="info">
-Note down the `"token": "plan_..."`. This is your `plan_id` for checkout URL generation. Plan creation is recommended via the **Merchant Dashboard** or the official SDK (`safepay.client.plans.create`). Prefer those over hand-rolled REST calls so you stay aligned with the client library.
-
+	Note down the `"token": "plan_..."`. This is your `plan_id` for checkout URL generation. Plan creation is recommended via the **Merchant
+	Dashboard** or the official SDK (`safepay.client.plans.create`). Prefer those over hand-rolled REST calls so you stay aligned with the
+	client library.
 </Callout>
 
 If you create the plan in the Dashboard:
@@ -159,7 +229,7 @@ If you create the plan in the Dashboard:
 2.  Create a plan with the fields below.
 3.  Copy the Plan ID (`plan_...`) into your environment or database.
 
-### Plan fields reference
+Plan fields reference:
 
 | Parameter        | Required | Description                                                 |
 | ---------------- | -------- | ----------------------------------------------------------- |
@@ -177,13 +247,17 @@ If you create the plan in the Dashboard:
 
 </Callout>
 
-3
+</Step>
+<Step>
 
-## Create an authentication token
+### Create an authentication token
 
 After you have a plan, make a `POST` request to `/client/passport/v1/token` to generate a short-lived authentication token. Tokens expire in about 1 hour. Cache with a buffer to avoid unnecessary API calls at scale.
 
-```javascript title="Create an authentication token in NodeJS"
+<Tabs items={["Node JS", "PHP", "cURL"]}>
+<Tab value="Node JS">
+
+```javascript
 const axios = require("axios");
 
 let tokenCache = { value: null, expiresAt: 0 };
@@ -215,7 +289,74 @@ async function getAuthToken() {
 }
 ```
 
-Example response (sandbox placeholder):
+</Tab>
+<Tab value="PHP">
+
+```php
+<?php
+require_once('vendor/autoload.php');
+
+function getAuthToken(): string
+{
+  static $tokenCache = ['value' => null, 'expiresAt' => 0];
+
+  $now = (int) (microtime(true) * 1000);
+
+  // Refresh if expired or within 5-minute buffer
+  if ($tokenCache['value'] && $now < $tokenCache['expiresAt'] - 300000) {
+    return $tokenCache['value'];
+  }
+
+  $host = getenv('SAFEPAY_HOST') ?: 'https://sandbox.api.getsafepay.com';
+  $secret = getenv('SAFEPAY_SECRET_KEY');
+
+  $ch = curl_init("{$host}/client/passport/v1/token");
+  curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => [
+      "X-SFPY-MERCHANT-SECRET: {$secret}",
+      'Content-Type: application/json'
+    ],
+    CURLOPT_POSTFIELDS => '{}'
+  ]);
+
+  $body = curl_exec($ch);
+  $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  curl_close($ch);
+
+  if ($status < 200 || $status >= 300) {
+    throw new RuntimeException("Auth token request failed: HTTP {$status}");
+  }
+
+  $json = json_decode($body, true);
+  $token = $json['token'] ?? ($json['data']['token'] ?? $json['data'] ?? null);
+
+  if (!$token || !is_string($token)) {
+    throw new RuntimeException('Auth token missing from response');
+  }
+
+  $tokenCache = [
+    'value' => $token,
+    'expiresAt' => $now + 3600000 // 1 hour TTL
+  ];
+
+  return $token;
+}
+```
+
+</Tab>
+<Tab value="cURL">
+
+```bash
+curl -X POST "https://sandbox.api.getsafepay.com/client/passport/v1/token" \
+  -H "X-SFPY-MERCHANT-SECRET: SAFEPAY_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+</Tab>
+</Tabs>
 
 ```json title="Authentication token response"
 {
@@ -228,15 +369,19 @@ Example response (sandbox placeholder):
 
 </Callout>
 
-4
+</Step>
+<Step>
 
-## Generate the Checkout URL and redirect
+### Generate the Checkout URL and redirect
 
 Now that the plan and authentication token are available, your server must build the Checkout URL and redirect the customer so they can authorize the subscription.
 
 Build the URL on your server against `SAFEPAY_CHECKOUT_HOST` using the subscription checkout route `/checkout/auth/login`. The checkout URL uses `plan_id`, `auth_token`, `env`, `redirect_url`, and `cancel_url`. If your integration uses an internal `reference` for webhook correlation, preserve and persist that reference in your own database; do not assume a tracker is required for subscription checkout.
 
-```javascript title="Build the Checkout URL in NodeJS"
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+```javascript
 function buildCheckoutUrl({ planId, reference, token, redirectUrl, cancelUrl }) {
 	const base = process.env.SAFEPAY_CHECKOUT_HOST;
 	const env = process.env.SAFEPAY_ENV || "sandbox";
@@ -251,19 +396,44 @@ function buildCheckoutUrl({ planId, reference, token, redirectUrl, cancelUrl }) 
 }
 ```
 
+</Tab>
+<Tab value="PHP">
+
+```php
+<?php
+
+function buildCheckoutUrl(array $opts): string
+{
+  $base = rtrim(getenv('SAFEPAY_CHECKOUT_HOST') ?: 'https://sandbox.api.getsafepay.com', '/');
+  $env = getenv('SAFEPAY_ENV') ?: 'sandbox';
+  $params = http_build_query([
+    'plan_id' => $opts['planId'],
+    'auth_token' => $opts['token'],
+    'env' => $env,
+    'redirect_url' => $opts['redirectUrl'],
+    'cancel_url' => $opts['cancelUrl'],
+  ]);
+  return "{$base}/checkout/auth/login?{$params}";
+}
+```
+
+</Tab>
+</Tabs>
+
 cURL is not used to open checkout in the browser. After you obtain an auth token, assemble the URL and redirect the shopper:
 
-```text title="Example Checkout URL (sandbox)"
+```text title="Example Checkout URL"
 https://sandbox.api.getsafepay.com/checkout/auth/login?plan_id=plan_...&auth_token=...&env=sandbox&redirect_url=https%3A%2F%2Fmywebsite.com%2Fsubscribe%2Fsuccess&cancel_url=https%3A%2F%2Fmywebsite.com%2Fsubscribe%2Fcancel
 ```
 
-Live checkout host: `https://getsafepay.com`.
-
-### Redirect handler
+#### Redirect handler
 
 Persist your `reference` **before** redirecting if you use a merchant-side correlation reference. The reference is your own identifier; do not use a payment tracker as the subscription correlation key. If a webhook arrives before your success page runs, the row must already exist.
 
-```javascript title="Redirect handler in NodeJS"
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+```javascript
 app.get("/subscribe", async (req, res) => {
 	const { userId, planId } = req.query;
 
@@ -292,12 +462,48 @@ app.get("/subscribe", async (req, res) => {
 });
 ```
 
-<Callout type="warn">
-**Warning:** Always persist the `reference` before redirect. If a webhook arrives before your redirect handler runs, you need the row to already exist in your DB.
+</Tab>
+<Tab value="PHP">
 
+```php
+<?php
+
+$userId = $_GET['userId'] ?? '';
+$planId = $_GET['planId'] ?? '';
+
+$reference = 'sub_' . $userId . '_' . time();
+
+// Persist reference → pending state BEFORE redirect
+$db->subscriptions->create([
+  'reference' => $reference,
+  'user_id' => $userId,
+  'plan_id' => $planId,
+  'status' => 'pending',
+  'created_at' => date('c'),
+]);
+
+$token = getAuthToken();
+$url = buildCheckoutUrl([
+  'planId' => $planId,
+  'reference' => $reference,
+  'token' => $token,
+  'redirectUrl' => rtrim(getenv('APP_URL'), '/') . '/subscribe/success',
+  'cancelUrl' => rtrim(getenv('APP_URL'), '/') . '/subscribe/cancel',
+]);
+
+header('Location: ' . $url);
+exit;
+```
+
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+	**Warning:** Always persist the `reference` before redirect. If a webhook arrives before your redirect handler runs, you need the row to
+	already exist in your DB.
 </Callout>
 
-### Redirect vs webhook — critical distinction
+#### Redirect vs webhook
 
 | Signal                                   | Reliable?                                   | Use for               |
 | ---------------------------------------- | ------------------------------------------- | --------------------- |
@@ -307,20 +513,19 @@ app.get("/subscribe", async (req, res) => {
 | `subscription.created` webhook           | YES                                         | Store `sub_id`        |
 
 <Callout type="warn">
-**Critical:** Never activate a subscription based on a redirect URL callback. Only webhook events are authoritative.
-
+	**Critical:** Never activate a subscription based on a redirect URL callback. Only webhook events are authoritative.
 </Callout>
 
-5
+</Step>
+<Step>
 
-## Handle webhooks
+### Handle webhooks
 
 <Callout type="info">
-Webhooks are the only reliable mechanism for subscription state changes. Build webhook handling before testing end-to-end flows.
-
+	Webhooks are the only reliable mechanism for subscription state changes. Build webhook handling before testing end-to-end flows.
 </Callout>
 
-### Mandatory processing order
+#### Mandatory processing order
 
 This sequence is non-negotiable. Deviating from it causes race conditions and missed activations.
 
@@ -331,15 +536,18 @@ This sequence is non-negotiable. Deviating from it causes race conditions and mi
 5.  Apply business logic asynchronously.
 
 <Callout type="warn">
-**Warning:** ACK (HTTP 200) before business logic. If your business logic throws, Safepay will not retry if you already responded 200. Log failures internally and handle via your own retry mechanism.
-
+	**Warning:** ACK (HTTP 200) before business logic. If your business logic throws, Safepay will not retry if you already responded 200. Log
+	failures internally and handle via your own retry mechanism.
 </Callout>
 
-### HMAC signature verification
+#### HMAC signature verification
 
 Every webhook includes an HMAC-SHA256 signature. Verify it before processing any event. Use the **raw** request body (not parsed JSON).
 
-```javascript title="Verify HMAC signature in NodeJS"
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+```javascript
 const crypto = require("crypto");
 
 function verifyHmacSignature(secret, rawBody, receivedSignature) {
@@ -356,6 +564,35 @@ function verifyHmacSignature(secret, rawBody, receivedSignature) {
 app.use("/webhook/safepay", express.raw({ type: "application/json" }));
 ```
 
+</Tab>
+<Tab value="PHP">
+
+```php
+<?php
+
+function verifyHmacSignature(string $secret, string $rawBody, string $receivedSignature): bool
+{
+  $computed = hash_hmac('sha256', $rawBody, $secret);
+
+  // hash_equals is timing-safe (do not use ===)
+  return hash_equals($computed, $receivedSignature);
+}
+
+// Read the raw body before JSON decoding
+$rawBody = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_SFPY_SIGNATURE'] ?? '';
+
+if (!verifyHmacSignature(getenv('SAFEPAY_WEBHOOK_SECRET'), $rawBody, $signature)) {
+  http_response_code(401);
+  echo 'Invalid signature';
+  exit;
+}
+
+```
+
+</Tab>
+</Tabs>
+
 Conceptual (any language):
 
 1.  Read the `X-SFPY-SIGNATURE` header.
@@ -364,13 +601,16 @@ Conceptual (any language):
 4.  Only then parse JSON and process the event.
 
 <Callout type="warn">
-**Critical:** Use `timingSafeEqual` (Node) or `hash_equals` (PHP) — not `===`. Plain string comparison is vulnerable to timing attacks that can allow signature forgery.
-
+	**Critical:** Use `timingSafeEqual` (Node) or `hash_equals` (PHP) — not `===`. Plain string comparison is vulnerable to timing attacks
+	that can allow signature forgery.
 </Callout>
 
-### Full webhook handler
+#### Full webhook handler
 
-```javascript title="Full webhook handler in NodeJS"
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+```javascript
 app.post("/webhook/safepay", express.raw({ type: "application/json" }), async (req, res) => {
 	const signature = req.headers["x-sfpy-signature"];
 	const rawBody = req.body; // Buffer — required for HMAC
@@ -409,11 +649,65 @@ app.post("/webhook/safepay", express.raw({ type: "application/json" }), async (r
 });
 ```
 
-### Business logic handler
+</Tab>
+<Tab value="PHP">
+
+```php
+<?php
+
+$rawBody = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_SFPY_SIGNATURE'] ?? '';
+
+// 1. Verify signature
+if (!verifyHmacSignature(getenv('SAFEPAY_WEBHOOK_SECRET'), $rawBody, $signature)) {
+  http_response_code(401);
+  echo 'Invalid signature';
+  exit;
+}
+
+$event = json_decode($rawBody, true);
+
+// 2. Deduplicate
+if ($db->webhookEvents->exists(['event_id' => $event['id']])) {
+  http_response_code(200);
+  echo 'Duplicate — already processed';
+  exit;
+}
+
+// 3. Persist raw event
+$db->webhookEvents->insert([
+  'event_id' => $event['id'],
+  'type' => $event['type'],
+  'payload' => $rawBody,
+  'received_at' => date('c'),
+  'processed' => false,
+]);
+
+// 4. ACK immediately
+http_response_code(200);
+echo 'OK';
+
+// 5. Process asynchronously (queue/job preferred in production)
+try {
+  processWebhookEvent($event);
+} catch (Throwable $e) {
+  error_log('Webhook processing failed [' . $event['id'] . ']: ' . $e->getMessage());
+  // Alert your team — do NOT change the 200 response
+}
+
+```
+
+</Tab>
+</Tabs>
+
+#### Business logic handler
 
 Handle subscription events by type. Use `reference` as your primary lookup key.
 
-```javascript title="Business logic handler in NodeJS"
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+```javascript
 async function processWebhookEvent(event) {
 	switch (event.type) {
 		case "subscription.created":
@@ -465,7 +759,66 @@ async function processWebhookEvent(event) {
 }
 ```
 
-### Subscription event reference
+</Tab>
+<Tab value="PHP">
+
+```php
+<?php
+
+function processWebhookEvent(array $event): void
+{
+  global $db;
+
+  switch ($event['type']) {
+    case 'subscription.created':
+      $db->subscriptions->upsert([
+        'reference' => $event['data']['reference'],
+        'sub_id' => $event['data']['subscription_id'],
+        'status' => 'pending',
+        'plan_id' => $event['data']['plan_id'],
+      ]);
+      break;
+
+    case 'subscription.payment.succeeded':
+      $db->subscriptions->updateByReference($event['data']['reference'], [
+        'status' => 'active',
+        'last_txn_id' => $event['data']['transaction_id'],
+        'activated_at' => date('c'),
+      ]);
+      grantUserAccess($event['data']['reference']);
+      break;
+
+    case 'subscription.payment.failed':
+      $db->subscriptions->updateByReference($event['data']['reference'], [
+        'status' => 'payment_failed',
+      ]);
+      notifyUserPaymentFailed($event['data']['reference']);
+      break;
+
+    case 'subscription.cancelled':
+      $db->subscriptions->updateByReference($event['data']['reference'], [
+        'status' => 'cancelled',
+        'cancelled_at' => date('c'),
+      ]);
+      revokeUserAccess($event['data']['reference']);
+      break;
+
+    case 'payment.succeeded':
+      // NO-OP in subscription flows — no reference on this event
+      break;
+
+    default:
+      error_log('Unhandled event type: ' . $event['type']);
+  }
+
+  $db->webhookEvents->markProcessed($event['id']);
+}
+```
+
+</Tab>
+</Tabs>
+
+#### Subscription event reference
 
 | Event                            | Has `reference`? | Has `sub_id`? | Action required                                  |
 | -------------------------------- | ---------------- | ------------- | ------------------------------------------------ |
@@ -477,13 +830,14 @@ async function processWebhookEvent(event) {
 
 Event payloads carry the identifiers listed above (`reference`, `subscription_id` / `sub_id`, and on payment success `transaction_id`). Do not invent additional webhook JSON shapes beyond these fields and event types.
 
-6
+</Step>
+<Step>
 
-## Event correlation — key architecture
+### Event correlation
 
 Understanding which identifiers appear on which events is critical to building a correct integration.
 
-### Identifier map
+#### Identifier map
 
 | Identifier                   | What it is                                     | Present on                                       |
 | ---------------------------- | ---------------------------------------------- | ------------------------------------------------ |
@@ -492,9 +846,9 @@ Understanding which identifiers appear on which events is critical to building a
 | `transaction_id` (`txn_...`) | Individual payment transaction ID              | `subscription.payment.succeeded`                 |
 | `tracker` (`track_...`)      | Low-level payment tracker token                | `payment.succeeded` ONLY                         |
 
-### Correlation strategy
+#### Correlation strategy
 
-```text title="Correct correlation architecture"
+```javascript title="Correct correlation architecture"
 // Correct correlation architecture:
 //
 // subscription.created → reference (yours) + sub_id (Safepay's)
@@ -505,9 +859,9 @@ Understanding which identifiers appear on which events is critical to building a
 
 // Store both identifiers on subscription.created:
 await db.subscriptions.upsert({
-  reference: event.data.reference,           // Primary key for your lookups
-  sub_id: event.data.subscription_id,        // Use for Safepay API calls (cancel, etc.)
-  status: 'pending'
+	reference: event.data.reference, // Primary key for your lookups
+	sub_id: event.data.subscription_id, // Use for Safepay API calls (cancel, etc.)
+	status: "pending",
 });
 
 // All subsequent events: look up by reference
@@ -515,17 +869,18 @@ const subscription = await db.subscriptions.findByReference(event.data.reference
 ```
 
 <Callout type="warn">
-**Critical:** `payment.succeeded` fires for ALL payments on your account — including one-time payments. It has no subscription context. Do not attempt to correlate it with subscription events.
-
+	**Critical:** `payment.succeeded` fires for ALL payments on your account — including one-time payments. It has no subscription context. Do
+	not attempt to correlate it with subscription events.
 </Callout>
 
-7
+</Step>
+<Step>
 
-## Environment configuration
+### Environment configuration
 
-### Environment variables
+#### Environment variables
 
-```text title="Environment variables"
+```dotenv
 # .env.sandbox
 SAFEPAY_HOST=https://sandbox.api.getsafepay.com
 SAFEPAY_CHECKOUT_HOST=https://sandbox.api.getsafepay.com
@@ -551,7 +906,7 @@ SAFEPAY_WEBHOOK_SECRET=your_live_hmac_key   # DIFFERENT from sandbox
 
 </Callout>
 
-### Dashboard paths
+#### Dashboard paths
 
 | Resource         | Sandbox                                    | Live                                    |
 | ---------------- | ------------------------------------------ | --------------------------------------- |
@@ -560,9 +915,10 @@ SAFEPAY_WEBHOOK_SECRET=your_live_hmac_key   # DIFFERENT from sandbox
 | Webhook Setup    | Sandbox Dashboard → Developers → Endpoints | Live Dashboard → Developers → Endpoints |
 | Test Webhook API | Available                                  | N/A                                     |
 
-8
+</Step>
+<Step>
 
-## Webhook configuration in dashboard
+### Webhook configuration in dashboard
 
 1.  Go to **Dashboard → Developers → Endpoints**.
 2.  Click **+ Add an endpoint**.
@@ -576,11 +932,11 @@ SAFEPAY_WEBHOOK_SECRET=your_live_hmac_key   # DIFFERENT from sandbox
     - `subscription.cancelled`
 
 <Callout type="warn">
-**Warning:** Do not subscribe to `payment.succeeded` for subscription-only integrations. It carries no subscription context and will cause correlation confusion.
-
+	**Warning:** Do not subscribe to `payment.succeeded` for subscription-only integrations. It carries no subscription context and will cause
+	correlation confusion.
 </Callout>
 
-### Webhook server requirements
+#### Webhook server requirements
 
 | Requirement           | Test environment                | Live environment                |
 | --------------------- | ------------------------------- | ------------------------------- |
@@ -592,7 +948,7 @@ SAFEPAY_WEBHOOK_SECRET=your_live_hmac_key   # DIFFERENT from sandbox
 | Expected response     | HTTP 200                        | HTTP 200                        |
 | Retry behavior        | Failed events go to retry queue | Failed events go to retry queue |
 
-## Subscription status reference
+#### Subscription status reference
 
 | Status           | Meaning                            | Triggered by                     |
 | ---------------- | ---------------------------------- | -------------------------------- |
@@ -602,60 +958,61 @@ SAFEPAY_WEBHOOK_SECRET=your_live_hmac_key   # DIFFERENT from sandbox
 | `cancelled`      | Subscription stopped               | `subscription.cancelled`         |
 
 <Callout type="info">
-Always derive status from the latest webhook event. Do not infer status from API polling or redirect callbacks.
-
+	Always derive status from the latest webhook event. Do not infer status from API polling or redirect callbacks.
 </Callout>
 
-9
+</Step>
+<Step>
 
-## Test and go live
+### Test and go live
 
 Before going live, complete every item below. Test end-to-end in Sandbox first, then switch to live credentials.
 
-### Go-live checklist
-
 #### Webhook security
 
-- [ ] HMAC signature verification implemented with `timingSafeEqual` / `hash_equals`
-- [ ] Using raw request body (Buffer / raw string) for HMAC computation — not parsed JSON
-- [ ] Live HMAC key loaded from environment variable — not hardcoded
-- [ ] Sandbox and live HMAC keys are different — confirmed
+- HMAC signature verification implemented with `timingSafeEqual` / `hash_equals`
+- Using raw request body (Buffer / raw string) for HMAC computation — not parsed JSON
+- Live HMAC key loaded from environment variable — not hardcoded
+- Sandbox and live HMAC keys are different — confirmed
 
 #### Event handling
 
-- [ ] Deduplication logic in place (event ID stored and checked)
-- [ ] HTTP 200 returned **before** business logic executes
-- [ ] Raw webhook payload logged to database
-- [ ] `payment.succeeded` is a NO-OP in the subscription flow
-- [ ] All `subscription.*` events handled: `created`, `payment.succeeded`, `payment.failed`, `cancelled`
+- Deduplication logic in place (event ID stored and checked)
+- HTTP 200 returned **before** business logic executes
+- Raw webhook payload logged to database
+- `payment.succeeded` is a NO-OP in the subscription flow
+- All `subscription.*` events handled: `created`, `payment.succeeded`, `payment.failed`, `cancelled`
 
 #### Data architecture
 
-- [ ] `reference` stored on subscription creation (before redirect)
-- [ ] `sub_id` stored from `subscription.created` webhook
-- [ ] All state changes driven by `reference` from webhook events
+- `reference` stored on subscription creation (before redirect)
+- `sub_id` stored from `subscription.created` webhook
+- All state changes driven by `reference` from webhook events
 
 #### Infrastructure
 
-- [ ] Webhook endpoint publicly reachable via HTTPS
-- [ ] TLSv1.2 or TLSv1.3 on live endpoint
-- [ ] Port 443, 8443, or 8843 in use
-- [ ] Live plan created in Live Dashboard
-- [ ] Webhook endpoint registered in Live Dashboard
-- [ ] End-to-end test payment completed in Sandbox
+- Webhook endpoint publicly reachable via HTTPS
+- TLSv1.2 or TLSv1.3 on live endpoint
+- Port 443, 8443, or 8843 in use
+- Live plan created in Live Dashboard
+- Webhook endpoint registered in Live Dashboard
+- End-to-end test payment completed in Sandbox
 
 #### Configuration
 
-- [ ] All credentials loaded from environment variables
-- [ ] No hardcoded keys or URLs
-- [ ] Sandbox and live environments fully separated
-- [ ] Token caching implemented with 5-minute expiry buffer
+- All credentials loaded from environment variables
+- No hardcoded keys or URLs
+- Sandbox and live environments fully separated
+- Token caching implemented with 5-minute expiry buffer
 
 When you are ready to go live:
 
 1.  Apply for / use your live Safepay account.
 2.  Create the live plan and register the live webhook endpoint.
 3.  Switch environment variables to live hosts and live keys.
+
+</Step>
+</Steps>
 
 ## Common issues and fixes
 

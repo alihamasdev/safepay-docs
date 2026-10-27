@@ -1,7 +1,9 @@
 ---
-title: "Overview"
+title: "Online payments"
 description: "Accept payments with cards, wallets, and local payment methods on your website and mobile app."
 ---
+
+import { AtomIcon, GlobeIcon, Link2Icon, PlugIcon } from "lucide-react";
 
 You can integrate with our online payments APIs in several ways. These range from using a pre-built integration, to building your own UI for full control over your checkout experience.
 
@@ -9,102 +11,76 @@ You can integrate with our online payments APIs in several ways. These range fro
 
 Choose one of our server-side implementations depending on the use cases that you want to support with your online payment integration.
 
-[
-
-#### Build your integration
-
-Learn more about the flows we offer
-
-](/docs/payments/get-started/introduction)
+<Cards>
+	<Card
+		icon={Link2Icon}
+		title="Build your integration"
+		href="/docs/payments/get-started/introduction"
+		description="Learn more about the flows we offer"
+	/>
+</Cards>
 
 ## Start integrating
 
 Build your online payments integration.
 
-[
-
-#### Web
-
-Accept payments on your website.
-
-](/docs/payments/get-started/express-checkout?platform=web)
-
-[
-
-#### React Native
-
-Accept payments on your cross-platform mobile apps.
-
-](/docs/payments/get-started/express-checkout?platform-=react-native)
-
-[
-
-#### Plugins
-
-Accept payments with a plugin
-
-](/docs/no-code/overview)
+<Cards>
+	<Card
+		icon={<GlobeIcon />}
+		title="Web"
+		href="/docs/payments/get-started/express-checkout?platform=web"
+		description="Accept payments on your website."
+	/>
+	<Card
+		icon={<AtomIcon />}
+		title="React Native"
+		href="/docs/payments/get-started/express-checkout?platform=react-native"
+		description="Accept payments on your cross-platform mobile apps."
+	/>
+	<Card icon={<PlugIcon />} title="PlugIconins" href="/docs/no-code/overview" description="Accept payments with a plugIconin" />
+</Cards>
 
 ## Complete your integration
 
 Once your integration can make a payment, complete your integration by adding more features and functionality.
 
-[
-
-#### Set up webhooks
-
-Keep your system up-to-date on payment events, status changes, disputes, and more.
-
-](/docs/developers/webhooks/overview)
-
-[
-
-#### 3D Secure
-
-Add authentication and security to protect your business from chargebacks
-
-](/docs/payments/concepts/three-d-secure)
-
-[
-
-#### Issue refunds
-
-Refund a payment back to your shopper
-
-](/docs/payments/modify-payments/refund)
-
-[
-
-#### Use tokens
-
-Save a shopper's payment method for faster checkouts and recurring payments
-
-](/docs/payments/concepts/tokenization/introduction)
+<Cards>
+	<Card
+		title="Set up webhooks"
+		href="/docs/developers/webhooks/overview"
+		description="Keep your system up-to-date on payment events, status changes, disputes, and more."
+	/>
+	<Card
+		title="3D Secure"
+		href="/docs/payments/concepts/three-d-secure"
+		description="Add authentication and security to protect your business from chargebacks"
+	/>
+	<Card title="Issue refunds" href="/docs/payments/modify-payments/refund" description="Refund a payment back to your shopper" />
+	<Card
+		title="Use tokens"
+		href="/docs/payments/concepts/tokenization/introduction"
+		description="Save a shopper's payment method for faster checkouts and recurring payments"
+	/>
+</Cards>
 
 ## Test and go live
 
 Test your integration, and get ready to accept live payments.
 
-[
-
-#### Make test payments
-
-Use our test card numbers and credentials to test how your integration handles payments
-
-](/docs/developers/safepay/test-cards)
-
-[
-
-#### Test error scenarios
-
-Test how your integration handles refused payments, cancelled transactions, and other scenarios.
-
-](/docs/developers/safepay/error-scenarios)
-
-[
-
-#### Go live
-
-Learn about the steps required to take your integration live
-
-](/docs/payments/get-started/go-live-checklist)
+<Cards>
+	<Card
+		title="Make test payments"
+		href="/docs/developers/safepay/test-cards"
+		description="Use our test card numbers and credentials to test how your integration handles payments"
+	/>
+	<Card
+		title="Test error scenarios"
+		href="/docs/developers/safepay/error-scenarios"
+		description="Test how your integration handles refused payments, cancelled transactions, and other scenarios."
+	/>
+	<Card
+		title="Go live"
+		href="/docs/payments/get-started/go-live-checklist"
+		description="Learn about the steps required to take your integration live"
+	/>
+</Cards>

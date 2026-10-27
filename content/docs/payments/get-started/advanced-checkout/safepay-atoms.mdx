@@ -1,13 +1,100 @@
 ---
-title: "Safepay Atoms Overview"
+title: "Safepay Atoms"
 description: "Decide your integration flow."
 ---
 
-```html
+## Install Safepay Atoms
 
+Safepay Atoms provides a Web Component and a React Component (depending on the frontend framework your web application uses) to manage the Device Data Collection and Challenge flow for your customers.
+
+To install our Atoms library using `npm`, run the following command from the root of your web application
+
+```bash
+npm install @sfpy/atoms
 ```
 
-6
+If you're not using a package manager like `npm`, you can directly include the library in your HTML file by adding the following script tag to your HTML file:
+
+```html
+<script src="https://unpkg.com/@sfpy/atoms@latest/dist/index.js"></script>
+```
+
+From the response recieved in the previous step, you can extract the `access_token` and `device_data_collection_url` to pass into the PayerAuthentication atom, along with the other required properties needed.
+
+<Tabs items={["React", "Web Components"]} groupId="web_language">
+<Tab value="React">
+
+```javascript
+import { Suspense, useRef } from 'react';
+import { PayerAuthentication } from '@sfpy/atoms';
+// Import the styles in your JavaScript/TypeScript project
+import '@sfpy/atoms/styles'
+
+        function AuthenticationForm() {
+          const authRef = useRef(null);
+
+          const handleFailure = useCallback((error: any) => {
+            // customer was not able to complete payer authentication
+            // handle the error scenario
+            console.error('Payer authentication failed:', error);
+          }, [])
+
+          const handleSuccess = useCallback((data: any) => {
+            // customer completed payer authentication
+            // handle the success scenario
+            console.log('Payer authentication succeeded:', data);
+          }, [])
+
+          return (
+            <Suspense fallback={<div>Loading authentication...</div>}>
+              <PayerAuthentication
+                environment="sandbox"
+                tracker="your-tracker"
+                authToken="your-client-auth-token"
+                deviceDataCollectionJWT="your-device-jwt"
+                deviceDataCollectionURL="https://your-collection-url"
+                authorizationOptions={{
+                  do_capture: true // perform sale
+                  do_card_on_file: true // tokenize customers card
+                }}
+                imperativeRef={authRef}
+                onPayerAuthenticationFailure={handleFailure}
+                onPayerAuthenticationSuccess={handleSuccess}
+                onPayerAuthenticationFrictionless={handleSuccess}
+                onPayerAuthenticationUnavailable={handleFailure}
+                onSafepayError={handleFailure}
+              />
+            </Suspense>
+          );
+        }
+```
+
+</Tab>
+<Tab value="Web Components">
+
+```html
+<safepay-payer-authentication
+	environment="sandbox"
+	auth-token="your-auth-token"
+	tracker="your-tracker"
+	onPayerAuthenticationFailure="{handleFailure}"
+	onPayerAuthenticationSuccess="{handleSuccess}"
+	onPayerAuthenticationFrictionless="{handleSuccess}"
+	onPayerAuthenticationUnavailable="{handleFailure}"
+	onSafepayError="{handleFailure}"
+></safepay-payer-authentication>
+
+<script type="text/javascript">
+	// Example using Web Component methods
+	const payerAuthAtom = document.querySelector("safepay-payer-authentication");
+
+	payerAuthAtom.deviceDataCollectionJWT = "your-device-jwt";
+	payerAuthAtom.deviceDataCollectionURL = "your-collection-url";
+</script>
+```
+
+</Tab>
+</Tabs>
 
 ## Completing Payer Authentication
 
@@ -27,10 +114,15 @@ If payer authentication was successful:
 
 Depending on the options you passed into the PayerAuthentication atom, the tracker will either be in state `TRACKER_AUTHORIZED` or `TRACKER_ENDED`. You can optionally verify the status of the tracker using the Reporter API.
 
-```javascript title="Fetch a tracker to get the status in NodeJS"
-const safepay = require("@sfpy/node-core")("SAFEPAY_SECRET_KEY", {
+<Tabs items={["Node JS", "PHP"]}>
+<Tab value="Node JS">
+
+```javascript
+const Safepay = require("@sfpy/node-core");
+
+const safepay = new Safepay(process.env.SAFEPAY_SECRET_KEY, {
 	authType: "secret",
-	host: "https://sandbox.api.getsafepay.com", // for live payments use https://api.getsafepay.com
+	host: process.env.SAFEPAY_HOST,
 });
 
 try {
@@ -39,3 +131,25 @@ try {
 	console.log(error);
 }
 ```
+
+</Tab>
+<Tab value="PHP">
+
+```php
+$safepay = new \Safepay\SafepayClient([
+  'api_key' => 'SAFEPAY_SECRET_KEY',
+  'api_base' => 'https://sandbox.api.getsafepay.com' // for live payments use https://api.getsafepay.com
+]);
+
+try {
+  $reponse = $safepay->reporter->payments->fetch($trackerToken);
+} catch(\UnexpectedValueException $e) {
+    // Invalid payload
+    http_response_code(400);
+    exit();
+}
+
+```
+
+</Tab>
+</Tabs>

@@ -7,16 +7,18 @@ Follow the checklist below to ensure you have a complete online payments integra
 
 Before you begin integrating Safepay, make sure you've gone through the following steps:
 
-1
+<Steps>
+<Step>
 
-## Sandbox Account Setup
+### Sandbox Account Setup
 
 - You’ve created a **Sandbox Account** via the [Dashboard](https://sandbox.api.getsafepay.com/dashboard/login).
 - You've retrieved your **Client-side and Server-side API keys**.
 
-2
+</Step>
+<Step>
 
-## Understand the Integration
+### Understand the Integration
 
 - You’ve **chosen your integration flow**: [Express Checkout Guide](/docs/payments/get-started/express-checkout)
   - [Atoms Web](/docs/payments/get-started/advanced-checkout/safepay-atoms)
@@ -37,7 +39,8 @@ Before you begin integrating Safepay, make sure you've gone through the followin
   - [Webhooks](/docs/developers/webhooks/overview)
   - [3D Secure](/docs/payments/concepts/three-d-secure)
 
-3
+</Step>
+<Step>
 
 ### Security & Authentication
 
@@ -45,27 +48,29 @@ Before you begin integrating Safepay, make sure you've gone through the followin
 - You’ve configured **webhooks** to receive transaction updates.
 - You’re validating webhooks and **verifying JWTs** server-side.
 
-4
+</Step>
+<Step>
 
 ### Test Environment
 
 - You’ve successfully tested:
-- Creating a Tracker
-- Creating a Customer
-- Creating a JWT/Time based token
-- 3DS challenge flows
-- Handling declined transactions
+  - Creating a Tracker
+  - Creating a Customer
+  - Creating a JWT/Time based token
+  - 3DS challenge flows
+  - Handling declined transactions
 - You’ve handled all possible error responses.
 - Your frontend handles **success**, **failure**, and **cancellation** states.
 
-5
+</Step>
+<Step>
 
 ### Pre-Go-Live
 
 - You’ve completed the [KYC onboarding form](https://getsafepay.com/onboarding/login).
 - All production API keys and webhook endpoints are updated in your code.
 
-<Callout type="info">
-Make sure you monitor webhooks in real-time during testing and production to avoid missing charge updates.
+</Step>
+</Steps>
 
-</Callout>
+<Callout type="info">Make sure you monitor webhooks in real-time during testing and production to avoid missing charge updates.</Callout>
