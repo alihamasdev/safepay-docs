@@ -37,7 +37,7 @@ async function checkLinks() {
 			},
 			// check relative paths
 			checkRelativePaths: "as-url",
-			whitelist: (url) => url.startsWith("/openapi.json"),
+			whitelist: (url) => url.startsWith("/openapi.json") || url.startsWith("/llms") || url.startsWith("/api/mcp"),
 		}),
 		true,
 	);

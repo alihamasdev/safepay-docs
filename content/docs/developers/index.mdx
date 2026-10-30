@@ -3,58 +3,50 @@ title: "Overview"
 description: "Learn what you need to build a successful integration with Safepay."
 ---
 
+import { BotIcon, LibraryIcon, LockKeyholeIcon, WebhookIcon } from "lucide-react";
+import { GithubIcon, YoutubeIcon } from "@/components/icons";
+
 This page provides resources to help you successfully build your integration with Safepay. Start with Setup and integration to access your authentication credentials, Safepay's libraries, integration examples, and more.
 
 ## Setup and integration
 
 These are some parts of what you need to build your integration. Before you use this section, [choose the type of integration](/docs/payments) you want to build and follow the corresponding integration guide. While you follow the integration guide, you can reference this information.
 
-[
-
-#### API credentials
-
-Authenticate your API requests with Safepay
-
-](/docs/developers/safepay/api-keys)
-
-[
-
-#### Libraries
-
-Install and use our server-side API libraries
-
-](/docs/developers/safepay/libraries-sdks)
-
-[
-
-#### Webhooks
-
-Receive important updates related to your account.
-
-](/docs/developers/webhooks/overview)
+<Cards>
+	<Card
+		icon={<LockKeyholeIcon />}
+		title="API credentials"
+		href="/docs/developers/safepay/api-keys"
+		description="Authenticate your API requests with Safepay"
+	/>
+	<Card
+		icon={<LibraryIcon />}
+		title="Libraries"
+		href="/docs/developers/safepay/libraries-sdks"
+		description="Install and use our server-side API libraries"
+	/>
+	<Card
+		icon={<WebhookIcon />}
+		title="Webhooks"
+		href="/docs/developers/webhooks/overview"
+		description="Receive important updates related to your account."
+	/>
+</Cards>
 
 ## Examples and tutorials
 
-[
-
-#### Postman collections
-
-Try out the Safepay APIs
-
-](https://apidocs.getsafepay.com)
-
-[
-
-#### Open source
-
-Official implementation examples of Safepay products and services
-
-](https://github.com/getsafepay)
-
-[
-
-#### Video tutorials
-
-A guided walkthrough on how to successfully integrate with Safepay products
-
-](https://www.youtube.com/channel/UC2p3wCcMCtSkEez6alHFW7g)
+<Cards>
+	<Card icon={<BotIcon />} title="Postman collections" href="https://apidocs.getsafepay.com" description="Try out the Safepay APIs" />
+	<Card
+		icon={<GithubIcon />}
+		title="Open source"
+		href="https://github.com/getsafepay"
+		description="Official implementation examples of Safepay products and services"
+	/>
+	<Card
+		icon={<YoutubeIcon />}
+		title="Video tutorials"
+		href="https://www.youtube.com/channel/UC2p3wCcMCtSkEez6alHFW7g"
+		description="A guided walkthrough on how to successfully integrate with Safepay products"
+	/>
+</Cards>

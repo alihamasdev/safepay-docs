@@ -1,0 +1,122 @@
+---
+title: "MCP Server"
+description: "Connect AI assistants and LLMs directly to Safepay documentation with the Model Context Protocol."
+---
+
+import { BotIcon, FileCode2Icon, FileTextIcon, SearchIcon, SparklesIcon, TerminalIcon } from "lucide-react";
+
+Safepay documentation natively supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io), allowing AI coding assistants such as Claude Desktop, Claude Code, Cursor, and Windsurf to search, browse, and read our latest documentation directly.
+
+## LLM Context Resources
+
+In addition to the real-time MCP server, we provide machine-readable documentation endpoints adhering to the `/llms.txt` specification:
+
+<Cards>
+	<Card
+		icon={<FileTextIcon />}
+		title="llms.txt"
+		href="/llms.txt"
+		description="Index and structured summary of all Safepay documentation pages formatted for LLMs."
+	/>
+	<Card
+		icon={<FileCode2Icon />}
+		title="llms-full.txt"
+		href="/llms-full.txt"
+		description="Complete full-text documentation bundle in a single file for deep context ingestion."
+	/>
+</Cards>
+
+## MCP Server Endpoint
+
+The Safepay documentation MCP server is hosted at:
+
+```http
+https://safepay.alihamas.pk/api/mcp
+```
+
+## Connecting Your AI Assistant
+
+Choose your AI development tool below to see the connection configuration:
+
+<Tabs items={["Cursor", "Claude", "Windsurf", "VS Code"]}>
+
+<Tab value="Cursor">
+
+```json
+{
+	"mcpServers": {
+		"safepay-docs": {
+			"url": "https://safepay.alihamas.pk/api/mcp"
+		}
+	}
+}
+```
+
+</Tab>
+
+<Tab value="Claude">
+
+```bash
+claude mcp add --transport sse safepay-docs https://safepay.alihamas.pk/api/mcp
+```
+
+</Tab>
+
+<Tab value="Windsurf">
+
+```json
+{
+	"mcpServers": {
+		"safepay-docs": {
+			"serverUrl": "https://safepay.alihamas.pk/api/mcp"
+		}
+	}
+}
+```
+
+</Tab>
+
+<Tab value="VS Code">
+
+```json
+{
+	"mcpServers": {
+		"safepay-docs": {
+			"url": "https://safepay.alihamas.pk/api/mcp"
+		}
+	}
+}
+```
+
+</Tab>
+
+</Tabs>
+
+## Available Tools
+
+Once connected, your AI assistant will automatically have access to the following tools:
+
+<Cards>
+	<Card
+		icon={<SearchIcon />}
+		title="search"
+		description="Searches documentation articles using keyword and semantic queries against the documentation index."
+	/>
+	<Card
+		icon={<TerminalIcon />}
+		title="list_pages"
+		description="Lists all documentation pages along with their URLs, titles, and descriptions."
+	/>
+	<Card icon={<SparklesIcon />} title="get_page" description="Fetches the full Markdown content of any documentation page given its URL." />
+</Cards>
+
+---
+
+## Example Prompts
+
+Once the MCP server is configured, you can prompt your AI assistant with queries such as:
+
+- _"How do I implement Safepay Checkout in a React Native app?"_
+- _"Show me how to verify Safepay webhook HMAC signatures in Node.js."_
+- _"What test cards can I use to simulate 3D Secure verification?"_
+- _"Search Safepay documentation for tokenization and customer payment journeys."_

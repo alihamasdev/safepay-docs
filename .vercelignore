@@ -1,0 +1,20 @@
+# Git & OS artifacts
+.git
+.DS_Store
+
+# Tooling and editors
+.vscode
+.agents
+
+# Build & TypeScript caches
+.next
+.turbo
+*.tsbuildinfo
+*.log
+
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example

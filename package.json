@@ -7,13 +7,19 @@
 		"check": "oxlint --fix && oxfmt --write",
 		"check-links": "bun scripts/validate-links.ts",
 		"check-types": "next typegen && tsc --noEmit",
+		"deploy": "vercel deploy",
+		"deploy:check": "vercel deploy --dry",
+		"deploy:prod": "vercel deploy --prod",
+		"deploy:setup": "vercel link",
 		"dev": "next dev",
 		"generate:openapi": "node scripts/generate-docs.mjs",
 		"postinstall": "fumadocs-mdx",
-		"start": "next start"
+		"start": "next start",
+		"vercel": "vercel"
 	},
 	"dependencies": {
 		"@fumadocs/base-ui": "^16.17.7",
+		"@modelcontextprotocol/server": "latest",
 		"cn": "^0.5.0",
 		"fumadocs-core": "^16.17.7",
 		"fumadocs-mdx": "^15.4.9",
@@ -36,6 +42,8 @@
 		"oxlint": "^1.89.0",
 		"postcss": "^8.5.31",
 		"tailwindcss": "^4.3.3",
-		"typescript": "^7.0.2"
-	}
+		"typescript": "^7.0.2",
+		"vercel": "^65.8.0"
+	},
+	"packageManager": "bun@1.4.2"
 }
